@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta charset="UTF-8">
+    <title>dog_torch tool</title>
+    <link rel="stylesheet" href="main_light.css">
+</head>
+<body>
+    <div id="menu_bar">
+        <div id="menu_bar_top">
+            <sidebar-item icon="resource/ArrowsRightLeft.svg" icon-alt="转换图标" active id="exchange-bar">转换</sidebar-item>
+            <sidebar-item icon="resource/hashTag0.svg" icon-alt="散列图标" id="hash-bar">散列</sidebar-item>
+            <sidebar-item icon="resource/LockClosed.svg" icon-alt="加密图标" id="encrypt-bar">加密</sidebar-item>
+            <sidebar-item icon="resource/LockOpen.svg" icon-alt="解密图标" id="decrypt-bar">解密</sidebar-item>
+            <sidebar-item icon="resource/task.svg" icon-alt="任务图标" id="task-bar">任务</sidebar-item>
+        </div>
+        <div id="menu_bar_bottom">
+            <sidebar-item icon="resource/about.svg" icon-alt="关于图标" id="about-bar">关于</sidebar-item>
+            <sidebar-item icon="resource/setting.svg" icon-alt="设置图标" id="setting-bar">设置</sidebar-item>
+        </div>
+    </div>
+    <div id="context">
+        <div class="context_frame_active" id="exchange-frame">
+            <div class="context_title">文本数据转换</div>
+            <binary-textarea id="exchange_input"></binary-textarea>
+            <div class="context_operator">
+                <div class="context_button" id="exchange_button">转换</div>
+            </div>
+            <binary-textarea id="exchange_output" output></binary-textarea>
+        </div>
+        <div class="context_frame" id="hash-frame">
+            <div class="context_title">数据散列计算</div>
+            <binary-textarea id="hash_input" file></binary-textarea>
+            <div class="context_operator">
+                <div id="hash_config">
+                    <label for="hash_name">散列算法</label>
+                    <select id="hash_name"></select>
+                    <label for="hash_region">算法配置</label>
+                    <select id="hash_region"></select>
+                </div>
+                <div id="hash_param"></div>
+                <div class="context_button" id="hash_button">散列</div>
+            </div>
+            <binary-textarea id="hash_output" default-type="hex" output></binary-textarea>
+        </div >
+        <div class="context_frame" id="encrypt-frame">
+            <div class="context_title">数据对称加密</div>
+            <binary-textarea id="encrypt_input" file bind-output="encrypt_output"></binary-textarea>
+            <div class="context_operator">
+                <div class="crypto_field">
+                    <div class="crypto_field_title">密钥</div>
+                    <binary-input id="encrypt_key"></binary-input>
+                </div>
+                <div>
+                    <div>
+                        <input type="radio" id="encrypt_block" name="encrypt_type" value="block" checked>
+                        <label for="encrypt_block">分组加密</label>
+                        <input title="请不要在流加密中在头部添加加密器的元数据 后续版本可能不兼容当前的头部格式" type="radio" id="encrypt_stream" name="encrypt_type" value="stream">
+                        <label title="请不要在流加密中在头部添加加密器的元数据 后续版本可能不兼容当前的头部格式" for="encrypt_stream">流加密</label>
+                    </div>
+                    <div class="crypto_area" id="encrypt_block_area">
+                        <div class="crypto_field" id="encrypt_block_algorithm_field">
+                            <div class="crypto_field_title">算法选择</div>
+                            <label for="encrypt_block_algorithm_name">加密算法</label>
+                            <select id="encrypt_block_algorithm_name"></select>
+                            <label for="encrypt_block_algorithm_block_size">分组长度</label>
+                            <select id="encrypt_block_algorithm_block_size"></select>
+                            <label for="encrypt_block_algorithm_key_size">密钥长度</label>
+                            <select id="encrypt_block_algorithm_key_size"></select>
+                        </div>
+                        <div class="crypto_field" id="encrypt_block_mode_field">
+                            <div class="crypto_field_title">工作模式选择</div>
+                            <label for="encrypt_block_mode_name">工作模式</label>
+                            <select id="encrypt_block_mode_name"></select>
+                            <label for="encrypt_block_padding_name">填充方法</label>
+                            <select id="encrypt_block_padding_name"></select>
+                        </div>
+                        <div class="crypto_field" id="encrypt_block_mode_params_field" style="display: none;"></div>
+                    </div>
+                    <div class="crypto_area" id="encrypt_stream_area" style="display: none;">
+                        <div class="crypto_field" id="encrypt_stream_algorithm_field">
+                            <div class="crypto_field_title" id="encrypt_stream_algorithm_title">算法选择</div>
+                            <label for="encrypt_stream_algorithm_name">加密算法</label>
+                            <select id="encrypt_stream_algorithm_name"></select>
+                            <label for="encrypt_stream_algorithm_effective">配置设置</label>
+                            <select id="encrypt_stream_algorithm_effective"></select>
+                            <label for="encrypt_stream_algorithm_key_size">密钥长度</label>
+                            <select id="encrypt_stream_algorithm_key_size"></select>
+                        </div>
+                    </div>
+                </div>
+                <div class="crypto_field">
+                    <div class="crypto_field_title">元数据</div>
+                    <label title="请不要在流加密中在头部添加加密器的元数据 后续版本可能不兼容当前的头部格式" for="encrypt_with_header">将加密配置写入密文头部</label>
+                    <input title="请不要在流加密中在头部添加加密器的元数据 后续版本可能不兼容当前的头部格式" type="checkbox" id="encrypt_with_header">
+                    <span>(请不要在流加密中在头部添加加密器的元数据 后续版本可能不兼容当前的头部格式)</span>
+                </div>
+                <div class="context_button" id="encrypt_button">加密</div>
+            </div>
+            <binary-textarea id="encrypt_output" default-type="hex" output file></binary-textarea>
+        </div>
+        <div class="context_frame" id="decrypt-frame">
+            <div class="context_title">数据对称解密</div>
+            <binary-textarea id="decrypt_input" file bind-output="decrypt_output"></binary-textarea>
+            <div class="context_operator">
+                <div class="crypto_field">
+                    <div class="crypto_field_title">密钥</div>
+                    <binary-input id="decrypt_key"></binary-input>
+                </div>
+                <div class="crypto_field">
+                    <div class="crypto_field_title">元数据</div>
+                    <label for="decrypt_with_header">是否携带头部</label>
+                    <input type="checkbox" id="decrypt_with_header">
+                    <span>(如果加加密时添加了元数据头部 请勾选此项)</span>
+                </div>
+                <div id="decrypt_cipher">
+                    <div>
+                        <input type="radio" id="decrypt_block" name="decrypt_type" value="block" checked>
+                        <label for="decrypt_block">分组加密</label>
+                        <input type="radio" id="decrypt_stream" name="decrypt_type" value="stream">
+                        <label for="decrypt_stream">流加密</label>
+                    </div>
+                    <div class="crypto_area" id="decrypt_block_area">
+                        <div class="crypto_field" id="decrypt_block_algorithm_field">
+                            <div class="crypto_field_title">算法选择</div>
+                            <label for="decrypt_block_algorithm_name">加密算法</label>
+                            <select id="decrypt_block_algorithm_name"></select>
+                            <label for="decrypt_block_algorithm_block_size">分组长度</label>
+                            <select id="decrypt_block_algorithm_block_size"></select>
+                            <label for="decrypt_block_algorithm_key_size">密钥长度</label>
+                            <select id="decrypt_block_algorithm_key_size"></select>
+                        </div>
+                        <div class="crypto_field" id="decrypt_block_mode_field">
+                            <div class="crypto_field_title">工作模式选择</div>
+                            <label for="decrypt_block_mode_name">工作模式</label>
+                            <select id="decrypt_block_mode_name"></select>
+                            <label for="decrypt_block_padding_name">填充方法</label>
+                            <select id="decrypt_block_padding_name"></select>
+                        </div>
+                        <div class="crypto_field" id="decrypt_block_mode_params_field" style="display: none;"></div>
+                    </div>
+                    <div class="crypto_area" id="decrypt_stream_area" style="display: none;">
+                        <div class="crypto_field" id="decrypt_stream_algorithm_field">
+                            <div class="crypto_field_title" id="decrypt_stream_algorithm_title">算法选择</div>
+                            <label for="decrypt_stream_algorithm_name">加密算法</label>
+                            <select id="decrypt_stream_algorithm_name"></select>
+                            <label for="decrypt_stream_algorithm_effective">配置设置</label>
+                            <select id="decrypt_stream_algorithm_effective"></select>
+                            <label for="decrypt_stream_algorithm_key_size">密钥长度</label>
+                            <select id="decrypt_stream_algorithm_key_size"></select>
+                        </div>
+                    </div>
+                </div>
+                <div class="context_button" id="decrypt_button">解密</div>
+            </div>
+            <binary-textarea id="decrypt_output" output file></binary-textarea>
+        </div>
+        <div class="context_frame" id="task-frame">
+            <div class="task_list" id="task_waiting_lists">
+                <div class="task_title" id="task_waiting_title">等待队列</div>
+            </div>
+            <div class="task_list" id="task_running_lists">
+                <div class="task_title" id="task_running_title">运行队列</div>
+            </div>
+            <div class="task_list" id="task_details">
+                <div class="task_title">任务详情</div>
+                <div id="task_back">点击左侧任务查看详情</div>
+                <div style="flex: 1;overflow-x: auto;">
+                    <task-label id="task_time_point"></task-label>
+                    <task-label id="task_type"></task-label>
+                    <task-label id="task_input"></task-label>
+                    <task-label id="task_operator"></task-label>
+                    <task-label id="task_output"></task-label>
+                    <task-label id="task_result"></task-label>
+                </div>
+            </div>
+        </div>
+        <div class="context_frame" id="setting-frame">
+            <input type="checkbox" id="setting_theme">
+        </div>
+        <div class="context_frame" id="about-frame">
+            <span>dog_torch简单密码学工具 electron实现</span>
+            <span>版本:20260912</span>
+            <label for="header-img">开发者</label>
+            <img src="./resource/header.png" alt="" id="header-img">
+            <span>技术栈</span>
+            <div id="stack-field">
+                <img src="./resource/cplusplus.svg" class="stack-img" alt="C++">
+                <img src="./resource/nodejs.svg" class="stack-img" alt="node.js">
+                <img src="./resource/electron.svg" class="stack-img" alt="Electron">
+                <img src="./resource/html5.svg" class="stack-img" alt="html5">
+                <img src="./resource/css3.svg" class="stack-img" alt="css3">
+                <img src="./resource/javascript.svg" class="stack-img" alt="javascript">
+            </div>
+        </div>
+    </div>
+    <dialog id="msg_dialog"></dialog>
+    <script src="main.js"></script>
+</body>
+</html>

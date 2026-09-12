@@ -1,0 +1,187 @@
+body{
+    width: 100vw;
+    height: 100vh;
+    margin: 0;
+    display: flex;
+    overflow: hidden;
+    background-color: #191919;
+}
+label{
+    color: #b5ba90;
+    background-color: #191919;
+}
+div{
+    color: #b5ba90;
+}
+select{
+    color: #66CCFF;
+    background-color: #372e2e;
+}
+textarea{
+    background-color: #372e2e;
+    color: #e9ead5;
+}
+#menu_bar{
+    width: 4.5%;
+    height: 100%;
+    background-color: #4a4f96;
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: center;
+}
+select,
+input[type="text"],
+[type="number"]{
+    background-color: #303030;
+    color: #FFFFFF;
+}
+binary-textarea{
+    --theme: dark;
+}
+binary-input{
+    --theme: dark;
+}
+#menu_bar_top{
+    height: 75%;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
+    align-items: center;
+}
+#menu_bar_bottom{
+    height: 25%;
+    width: 100%;
+    display: flex;
+    flex-direction: column-reverse;
+    flex-wrap: wrap;
+    align-items: center;
+    padding-bottom: 10px;
+}
+#context{
+    width: 94.5%;
+    overflow: auto;
+}
+.context_frame{
+    display:none;
+}
+.context_frame_active{
+    width: 95%;
+    padding: 2.5%;
+    height: 90%;
+    display:flex;
+    flex-direction: column;
+}
+.context_title{
+    width: 100%;
+    border-bottom: #62706b solid 1px;
+    color: #b5ba90;
+    font-size: 25px;
+}
+.context_operator{
+    width: 95%;
+    padding: 1% 2.5%;
+    margin: 1% 0;
+    border: #6060d6 solid 1px;
+    border-radius: 10px;
+}
+.context_button{
+    width: 56px;
+    height: 40px;
+    border-radius: 10px;
+    margin-top: 5px;
+    color: #000000;
+    background-color: #66CCFF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.context_button:hover{
+    background-color: #8e8ee1;
+}
+#msg_dialog{
+    width: 33%;
+    border: none;
+    outline: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: #FFFFFF00;
+    overflow: hidden;
+    pointer-events: none;
+}
+message-box{
+    width: 100%;
+    --theme: dark;
+}
+#hash_param{
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+}
+#header-img{
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+}
+#stack-field{
+    width: 100%;
+    height: 10%;
+    display: flex;
+    flex-direction: row;
+}
+.stack-img{
+    width: 10%;
+    aspect-ratio: 1 / 1;
+}
+#task-frame{
+    flex-direction: row;
+}
+.task_list{
+    width: 33%;
+    padding: 5px;
+    overflow-y: auto;
+    border-radius: 10px;
+    background-color: rgba(0, 129, 151, 0.5);
+    margin: 1%;
+}
+task-tag{
+    --theme: dark;
+}
+task-label{
+    --theme: dark;
+}
+#task_details{
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+.task_title{
+    font-size: 20px;
+    font-weight: bold;
+    margin: 0 2%;
+    padding: 0 0 3px 5px;
+    border-bottom: #00c588 solid 1px;
+}
+#task_back{
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #666;
+}
+.crypto_field{
+    padding: 10px 3px;
+    margin-top: 15px;
+    position: relative;
+    border-radius: 10px;
+    border: #007031 solid 1px;
+}
+.crypto_field_title{
+    position: absolute;
+    top: -13px;
+    left: 10px;
+    font-size: 15px;
+    background-color: #191919;
+}

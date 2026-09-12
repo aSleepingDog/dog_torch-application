@@ -1,0 +1,67 @@
+{
+  "name": "dog_torch_electron",
+  "version": "1.0.0",
+  "description": "simple cryptology tool based on electron",
+  "main": "index.js",
+  "scripts": {
+    "start": "electron .",
+    "pack": "electron-builder --dir",
+    "dist:win": "electron-builder --win --x64",
+    "dist:mac": "electron-builder --mac --x64 --arm64",
+    "dist:linux": "electron-builder --linux"
+  },
+  "author": "aSleepingDog",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^43.0.0",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "com.sleepingdog.dogtorch",
+    "productName": "DogTorch",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "index.js",
+      "main.js",
+      "preload.js",
+      "*.html",
+      "*.css",
+      "icon.ico",
+      "package.json",
+      "native/**/*.node",
+      "resource/*"
+    ],
+    "extraResources": [
+      {
+        "from": "native/",
+        "to": "native/",
+        "filter": ["**/*.node"]
+      },
+      {
+        "from": "resource/",
+        "to": "resource/"
+      }
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "DogTorch"
+    },
+    "mac": {
+      "target": ["dmg", "zip"],
+      "category": "public.app-category.utilities",
+      "icon": "icon.ico"
+    },
+    "linux": {
+      "target": ["AppImage", "deb"],
+      "icon": "icon.ico"
+    }
+  }
+}
