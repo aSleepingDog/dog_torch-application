@@ -8,7 +8,6 @@ body{
 }
 label{
     color: #b5ba90;
-    background-color: #191919;
 }
 div{
     color: #b5ba90;
@@ -32,15 +31,9 @@ textarea{
 }
 select,
 input[type="text"],
-[type="number"]{
+input[type="number"]{
     background-color: #303030;
     color: #FFFFFF;
-}
-binary-textarea{
-    --theme: dark;
-}
-binary-input{
-    --theme: dark;
 }
 #menu_bar_top{
     height: 75%;
@@ -111,10 +104,6 @@ binary-input{
     overflow: hidden;
     pointer-events: none;
 }
-message-box{
-    width: 100%;
-    --theme: dark;
-}
 #hash_param{
     width: 100%;
     display: flex;
@@ -145,12 +134,6 @@ message-box{
     border-radius: 10px;
     background-color: rgba(0, 129, 151, 0.5);
     margin: 1%;
-}
-task-tag{
-    --theme: dark;
-}
-task-label{
-    --theme: dark;
 }
 #task_details{
     position: relative;
@@ -184,4 +167,352 @@ task-label{
     left: 10px;
     font-size: 15px;
     background-color: #191919;
+}
+
+/* ===== file-input ===== */
+file-input {
+    display: inline;
+}
+file-input .file_input_field{
+    display: flex;
+    margin: 0 auto 1% auto;
+    flex-direction: column;
+    align-items: center;
+    width: 98%;
+    height: 100%;
+    border-radius: 5px;
+    border: 1px solid;
+    background-color: #3e474d;
+}
+file-input .file_input_field_active{
+    display: flex;
+    margin: 0 auto 1% auto;
+    flex-direction: column;
+    align-items: center;
+    width: 98%;
+    height: 100%;
+    border-radius: 5px;
+    border: 1px solid;
+    background-color: #7a8a95;
+}
+file-input .file_input_label{
+    text-align: center;
+}
+
+/* ===== sidebar-item ===== */
+sidebar-item {
+    display: block;
+    width: 100%;
+}
+.sidebar_item {
+    transition:background-color 0.75s;
+    width: 95%;
+    aspect-ratio: 1 / 1;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    align-content: center;
+    flex-wrap: nowrap;
+    position: relative;
+    cursor: pointer;
+    box-sizing: border-box;
+}
+.sidebar_icon {
+    transition: background-color 0.75s;
+    height: 60%;
+    padding: 10%;
+    border-radius: 10px;
+    display: block;
+}
+.sidebar_icon_active {
+    transition: background-color 0.75s;
+    height: 60%;
+    padding: 10%;
+    border-radius: 10px;
+    display: block;
+    background-color: #39C5BB80;
+    border: #003366 1px solid;
+}
+.sidebar_title {
+    padding: 2px;
+    display: none;
+    position: absolute;
+    left: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 100%;
+    color: #FFFFFF;
+    text-align: center;
+    background-color: rgba(128, 128, 128, 0.75);
+    border-radius: 5px;
+    width: 75%;
+    white-space: nowrap;
+    margin-left: 5px;
+}
+.sidebar_item:hover .sidebar_icon {
+    background-color: #66DDFF;
+}
+.sidebar_item:hover .sidebar_title {
+    display: block;
+    animation: title_showing 0.5s;
+}
+@keyframes title_showing{
+    0%{
+        opacity: 0;
+        visibility: hidden;
+    }
+    100%{
+        opacity: 1;
+        visibility: visible;
+    }
+}
+
+/* ===== binary-textarea ===== */
+@font-face {
+    font-family: "msyh";
+    src: url("resource/msyhl.ttc");
+}
+binary-textarea {
+    --theme: dark;
+}
+
+/* binary-textarea 和 binary-input 共享样式 */
+binary-textarea .binary_input, binary-input .binary_input{
+    padding: 5px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+}
+binary-textarea .type_choice_field, binary-input .type_choice_field{
+    width: 100%;
+    height: 30%;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: flex-start;
+}
+binary-textarea .type_choice_label, binary-input .type_choice_label{
+    margin-right: 5px;
+}
+binary-textarea .type_param_field, binary-input .type_param_field{
+    height: 30%;
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
+    align-items: center;
+    align-content: flex-start;
+}
+binary-textarea .base64_replace_field, binary-input .base64_replace_field{
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-start;
+}
+binary-textarea .base64_replace_field_hidden, binary-input .base64_replace_field_hidden{
+    display: none;
+}
+binary-textarea .input_field, binary-input .input_field{
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+}
+binary-textarea .input_text, binary-input .input_text{
+    width: 95%;
+}
+
+/* binary-textarea 独有样式 */
+binary-textarea .binary_input{
+    background-color: #39C5BB80;
+}
+binary-textarea .hex_field{
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-start;
+}
+binary-textarea .hex_field_hidden{
+    display: none;
+}
+binary-textarea textarea{
+    font-family: "msyh";
+    font-size: 15px;
+    background-color: #303030;
+    color: #FFFFFF;
+}
+binary-textarea select{
+    background-color: #303030;
+    color: #FFFFFF;
+}
+
+/* ===== binary-input ===== */
+binary-input {
+    --theme: dark;
+}
+binary-input select,
+binary-input input[type="text"],
+binary-input input[type="password"]{
+    background-color: #303030;
+    color: #FFFFFF;
+}
+
+/* ===== message-box ===== */
+message-box {
+    --theme: dark;
+}
+@font-face {
+    font-family: "single";
+    src: url("resource/NotoSansSC-VF.ttf");
+}
+@font-face{
+    font-family: "emoji";
+    src: url("resource/NotoColorEmoji.ttf");
+}
+.msg_title_emoji{
+    font-family : "emoji";
+}
+.msg_area{
+    animation: msg_title_showing 0.5s;
+    width: 95%;
+    background-color: #1E1F2D;
+    color: #FFFFFF;
+    font-family: "single";
+    margin: 1%;
+    border: 2px solid #22b590;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+}
+.msg_title_field{
+    margin: 0 5% 0 5%;
+    width: 90%;
+    display: flex;
+    flex-direction: row;
+}
+.msg_close{
+    margin-left: auto;
+    border-radius: 50%;
+    cursor:pointer;
+}
+.msg_content{
+    margin: 0 5% 0 5%;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+.msg_progress_field{
+    margin: 0 5% 0 5%;
+    display: flex;
+    justify-content: center;
+}
+.msg_progress{
+    width: 100%;
+    height: 2px;
+    background-color: #6060d6;
+    animation: progress 1.5s;
+}
+@keyframes msg_title_showing{
+    0%{
+        opacity: 0;
+        visibility: hidden;
+    }
+    100%{
+        opacity: 1;
+        visibility: visible;
+    }
+}
+@keyframes progress {
+    0%{
+        width: 100%;
+    }
+    100%{
+        width: 0;
+    }
+}
+
+/* ===== task-tag ===== */
+task-tag {
+    --theme: dark;
+}
+.task_area{
+    display: flex;
+    flex-direction: column;
+    border: 1px solid black;
+    background-color: #504d73;
+    border-radius: 10px;
+    border-color: #4188aa;
+    padding: 10px;
+    margin: 2%;
+}
+.task_area_active{
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #027c02;
+    background-color: #706ca3;
+    border-radius: 10px;
+    padding: 10px;
+    margin: 2%;
+}
+.task_progress_field{
+    position: relative;
+    height: 15px;
+    border-radius: 10px;
+    border: #66CCFF solid 1px ;
+    display: flex;
+}
+.task_progress{
+    width: 0;
+    background-color: #2ba668;
+    height: 15px;
+    border-radius: 10px;
+}
+.task_progress_text{
+    position: absolute;
+    font-size: 12px;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+}
+.task_operators{
+    display: flex;
+    flex-direction: row;
+    justify-content: space-evenly;
+}
+.task_status{
+    color: #ff0000;
+}
+.task_operator{
+    background-color: #8784a6;
+    padding: 2px;
+    border-radius: 5px;
+}
+.task_operator:hover{
+    background-color: #9f9cba;
+}
+
+/* ===== task-label ===== */
+task-label {
+    --theme: dark;
+}
+.task_label{
+    margin: 0 2%;
+    padding: 0 0 3px 5px;
+    font-size: 13px;
+    color: #39C5BB;
+}
+.task_line_context_field{
+    margin: 0 5%;
+    padding: 0 5px;
+}
+.task_line_context{
+    width: 100%;
+    font-size: 17px;
+    background-color: #00000000;
+    border: none;
+}
+.task_line_context:focus{
+    outline: none;
 }

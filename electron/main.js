@@ -14,7 +14,6 @@ function changeTheme(){
     }
 }
 function defaultTheme(){
-    // console.log(document.documentElement);
     if (!window.matchMedia){
         setLight();
         return;
@@ -35,18 +34,9 @@ function getTheme(){
 defaultTheme();
 function initCss(){
     document.querySelector("link").setAttribute("href",`main_${getTheme()}.css`);
-    // document.querySelector("link").setAttribute("href",`main_dark.css`);
 }
 initCss();
 
-
-function fmtTheme(elem){
-    let theme = "light";
-    if(getComputedStyle(elem).getPropertyValue('--theme').trim() === "dark"){
-        theme = "dark";
-    }
-    return theme;
-}
 function fmtIdBar(id){
     return id===null||id===undefined||id===""?"":`${id}-`;
 }
@@ -57,7 +47,6 @@ class FileSelect extends HTMLElement {
     }
     constructor(){
         super();
-        this.attachShadow({ mode: 'open' });
     }
     connectedCallback() {
         this.render();
@@ -69,7 +58,6 @@ class FileSelect extends HTMLElement {
     }
 
     id = "";
-    theme = "";
     file_paths = [];
     bindOutput = "";
     dragCounter = 0;
@@ -77,37 +65,9 @@ class FileSelect extends HTMLElement {
     showing = null;
     input = null;
     render(){
-        let theme = fmtTheme(this);
         const id = this.getAttribute('id');
         const idbar = fmtIdBar(id);
         const inner_str=`
-        <style>
-        .file_input_field{
-            display: flex;
-            margin: 0 auto 1% auto;
-            flex-direction: column;
-            align-items: center;
-            width: 98%;
-            height: 100%;
-            border-radius: 5px;
-            border: 1px solid;
-            background-color: ${theme!=="dark"?"#3e474d":"#cae6f5"};
-        }
-        .file_input_field_active{
-            display: flex;
-            margin: 0 auto 1% auto;
-            flex-direction: column;
-            align-items: center;
-            width: 98%;
-            height: 100%;
-            border-radius: 5px;
-            border: 1px solid;
-            background-color: ${theme!=="dark"?"#7a8a95":"#6e95aa"};
-        }
-        .file_input_label{
-            text-align: center;
-        }
-        </style>
         <div id="${idbar}file_input_field" class="file_input_field">
             <p>请点击选择文件或将文件拖拽至窗口</p>
             <p id="${idbar}file_text">当前文件:</p>
@@ -116,16 +76,16 @@ class FileSelect extends HTMLElement {
         if(this.getAttribute("bind-output")!==undefined){
             this.bindOutput = this.getAttribute("bind-output");
         }
-        this.shadowRoot.innerHTML = inner_str;
+        this.innerHTML = inner_str;
 
-        const input = this.shadowRoot.getElementById(`${idbar}file_input`);
+        const input = this.querySelector(`#${idbar}file_input`);
         input.addEventListener("change", (event) => {
             this.file_paths = [];
             const files = event.target.files;
             for (const file of event.target.files) {
                 this.file_paths.push(window.electron.getFilePath(file));
             }
-            let text = this.shadowRoot.getElementById(`${idbar}file_text`);
+            let text = this.querySelector(`#${idbar}file_text`);
             text.textContent = `当前文件:${this.file_paths[0]}`
             if(this.bindOutput!==""){
                 let output = document.querySelector(`binary-textarea#${this.bindOutput}`)
@@ -134,7 +94,7 @@ class FileSelect extends HTMLElement {
                 }
             }
         })
-        const field = this.shadowRoot.getElementById(`${idbar}file_input_field`);
+        const field = this.querySelector(`#${idbar}file_input_field`);
         this.addEventListener("click", (event) => {
             input.dispatchEvent(new MouseEvent('click', {
                 bubbles: true,
@@ -169,33 +129,37 @@ class FileSelect extends HTMLElement {
             input.files = event.dataTransfer.files;
             input.dispatchEvent(new Event('change', {}));
         })
+
+        if(this.hasAttribute("hidden")){
+            this.hidden_self(true);
+        }
     }
 
     get file_paths(){
         return this.file_paths;
     }
     get files(){
-        return this.shadowRoot.getElementById(`${idbar}file_input`).files;
+        const id = this.getAttribute('id');
+        const idbar = fmtIdBar(id);
+        return this.querySelector(`#${idbar}file_input`).files;
     }
     clear(){
         const id = this.getAttribute('id');
-        const idbar = id===null || id===""?"":id+"-";
-        const input = this.shadowRoot.getElementById(`${idbar}file_input`);
+        const idbar = fmtIdBar(id);
+        const input = this.querySelector(`#${idbar}file_input`);
         input.value = '';
         this.file_paths = [];
-        let text = this.shadowRoot.getElementById(`${idbar}file_text`);
+        let text = this.querySelector(`#${idbar}file_text`);
         text.textContent = "当前文件:";
     }
     hidden_self(h){
-        const id = this.getAttribute('id');
-        const idbar = id===null || id===""?"":id+"-";
         if(h){
-            this.removeAttribute("hidden");
-        }
-        else{
             this.setAttribute("hidden","");
         }
-        this.shadowRoot.getElementById(`${idbar}file_input_field`).hidden = h;
+        else{
+            this.removeAttribute("hidden");
+        }
+        this.querySelector(`.file_input_field`).style = h ? "display:none" : "";
     }
 }
 customElements.define('file-input', FileSelect);
@@ -203,7 +167,6 @@ customElements.define('file-input', FileSelect);
 class SidebarItem extends HTMLElement {
     constructor() {
         super();
-        this.attachShadow({ mode: 'open' });
     }
 
     static get observedAttributes() {
@@ -227,88 +190,10 @@ class SidebarItem extends HTMLElement {
         const title = this.textContent.trim();
         const iconAlt = this.getAttribute('icon-alt');
         const elementId = this.getAttribute('id');
-        const elementIdbar = elementId===null || elementId===""?"":elementId+"-";
+        const elementIdbar = fmtIdBar(elementId);
 
         let iconClass = isActive ? "sidebar_icon_active" : "sidebar_icon";
-        this.shadowRoot.innerHTML = `
-      <style>
-        :host {
-          display: block;
-          width: 100%;
-        }
-        
-        .sidebar_item {
-          transition:background-color 0.75s;
-          width: 95%;
-          aspect-ratio: 1 / 1;
-          border-radius: 10px;
-          display: flex;
-          flex-direction: row;
-          align-items: center;
-          justify-content: center;
-          align-content: center;
-          flex-wrap: nowrap;
-          position: relative;
-          cursor: pointer;
-          box-sizing: border-box;
-        }
-
-        .sidebar_icon {
-          transition: background-color 0.75s;
-          height: 60%;
-          padding: 10%;
-          border-radius: 10px;
-          display: block;
-        }
-        
-        .sidebar_icon_active {
-          transition: background-color 0.75s;
-          height: 60%;
-          padding: 10%;
-          border-radius: 10px;
-          display: block;
-          background-color: #39C5BB80;
-          border: #003366 1px solid;
-        }
-
-        .sidebar_title {
-          padding: 2px;
-          display: none;
-          position: absolute;
-          left: 100%;
-          top: 50%;
-          transform: translateY(-50%);
-          font-size: 100%;
-          color: #FFFFFF;
-          text-align: center;
-          background-color: rgba(128, 128, 128, 0.75);
-          border-radius: 5px;
-          width: 75%;
-          white-space: nowrap;
-          margin-left: 5px;
-        }
-
-        .sidebar_item:hover .sidebar_icon {
-          background-color: #66DDFF;
-        }
-
-        .sidebar_item:hover .sidebar_title {
-          display: block;
-          animation: title_showing 0.5s;
-        }
-        
-        @keyframes title_showing{
-            0%{
-                opacity: 0;
-                visibility: hidden;
-            }
-            100%{
-                opacity: 1;
-                visibility: visible;
-            }
-        }
-      </style>
-      
+        this.innerHTML = `
       <div class="sidebar_item" part="item" id="${elementIdbar}field">
         <img class="${iconClass}" id="${elementIdbar}img" src="${iconSrc}" alt="${iconAlt}" part="icon">
         <div class="sidebar_title" id="${elementIdbar}title" part="title">${title}</div>
@@ -317,13 +202,12 @@ class SidebarItem extends HTMLElement {
     }
 
     setupEventListeners() {
-        const item = this.shadowRoot.querySelector(".sidebar_item");
+        const item = this.querySelector(".sidebar_item");
 
         // 触发自定义点击事件
         item.addEventListener('click', (e) => {
             this.dispatchEvent(new CustomEvent('sidebar-click', {
                 bubbles: true,
-                composed: true,
                 detail: {
                     id: this.getAttribute('id') || '',
                     title: this.textContent.trim()
@@ -332,7 +216,6 @@ class SidebarItem extends HTMLElement {
         });
     }
 
-    // 公共方法：获取标题（从文本内容）
     get name() {
         return this.textContent.trim();
     }
@@ -341,7 +224,6 @@ class SidebarItem extends HTMLElement {
         this.textContent = value;
     }
 
-    // 公共方法：获取或设置图标
     get icon() {
         return this.getAttribute('icon');
     }
@@ -350,7 +232,6 @@ class SidebarItem extends HTMLElement {
         this.setAttribute('icon', value);
     }
 
-    // 公共方法：获取或设置 id
     get elementId() {
         return this.getAttribute('id') || '';
     }
@@ -367,7 +248,6 @@ class BinaryTextarea extends HTMLElement {
     bindOutput = "";
     constructor() {
         super();
-        this.attachShadow({ mode: 'open' });
     }
     static get observedAttributes() {
         return ['id', "output"];
@@ -378,8 +258,8 @@ class BinaryTextarea extends HTMLElement {
     }
     setupEventListeners(){
         const id = this.getAttribute('id');
-        const idbar = id===null || id===""?"":id+"-";
-        let textarea = this.shadowRoot.querySelector(`#${idbar}input_text`);
+        const idbar = fmtIdBar(id);
+        let textarea = this.querySelector(`#${idbar}input_text`);
         textarea.addEventListener("dblclick",(event)=>{
             if(event.target.value===""){
                 return;
@@ -396,13 +276,12 @@ class BinaryTextarea extends HTMLElement {
     }
 
     render() {
-        let theme = fmtTheme(this);
         const id = this.getAttribute('id');
         if(this.getAttribute("bind-output")!==undefined){
             this.bindOutput = this.getAttribute("bind-output");
         }
         this.id = id;
-        const idbar = id===null || id===""?"":id+"-";
+        const idbar = fmtIdBar(id);
         const file = this.hasAttribute('file');
         const output = this.hasAttribute('output');
         this.output = output;
@@ -412,77 +291,6 @@ class BinaryTextarea extends HTMLElement {
         }
         this.default_type = default_type;
         const inner_str = `
-            <style>
-                @font-face {
-                    font-family: "msyh";
-                    src: url("resource/msyhl.ttc");
-                }
-                .binary_input{
-                    padding: 5px;
-                    width: 100%;
-                    display: flex;
-                    flex-direction: column;
-                    background-color: #39C5BB80;
-                }
-                .type_choice_field{
-                    width: 100%;
-                    height: 30%;
-                    display: flex;
-                    flex-direction: row;
-                    flex-wrap: nowrap;
-                    align-items: center;
-                    justify-content: flex-start;
-                }
-                .type_choice_label{
-                    margin-right: 5px;
-                }
-                .type_param_field{
-                    height: 30%;
-                    display: flex;
-                    flex-direction: column;
-                    flex-wrap: wrap;
-                    align-items: center;
-                    align-content: flex-start;
-                }
-                .base64_replace_field{
-                    display: flex;
-                    flex-direction: row;
-                    flex-wrap: wrap;
-                    align-items: center;
-                    justify-content: flex-start;
-                }
-                .base64_replace_field_hidden{
-                    display: none;
-                }
-                .hex_field{
-                    display: flex;
-                    flex-direction: row;
-                    flex-wrap: wrap;
-                    align-items: center;
-                    justify-content: flex-start;
-                }
-                .hex_field_hidden{
-                    display: none;
-                }
-                .input_field{
-                    width: 100%;
-                    display: flex;
-                    flex-direction: column;
-                }
-                .input_text{
-                    width: 95%;
-                }
-                textarea{
-                    font-family: "msyh";
-                    font-size: 15px;
-                    background-color: ${theme!=="dark"?"#303030":"#FFFFFF"};
-                    color: ${theme!=="dark"?"#FFFFFF":"#000000"};
-                }
-                select{
-                    background-color: ${theme!=="dark"?"#303030":"#FFFFFF"};
-                    color: ${theme!=="dark"?"#FFFFFF":"#000000"};
-                }
-            </style>
             <div class="binary_input" id="${idbar}binary_input">
                 <div class="type_choice_field" id="${idbar}type_choice_field">
                     <input type="radio" name="${idbar}input_type" value="0" id="${idbar}input_type_utf8" ${default_type.toLowerCase() === "utf8" ? "checked" : ""}>
@@ -516,17 +324,16 @@ class BinaryTextarea extends HTMLElement {
                 </div>
                 <div class="input_field">
                     <textarea class="input_text" id="${idbar}input_text" rows="5" ${output ? "readonly" : ""}></textarea>
-                    ${file ?
-            output ? `<input placeholder="输入输出路径" id="${idbar}output_path" type="text" hidden>` :
-                `<file-input id="${idbar}input_file" bind-output="${this.bindOutput}" hidden></file-input>`
-            : ``}
+           ${file ? (output ? `<input placeholder="输入输出路径" id="${idbar}output_path" type="text" ${this.default_type==="file"?"":"hidden"}>`
+                            : `<file-input id="${idbar}input_file" bind-output="${this.bindOutput}" ${this.default_type==="file"?"":"hidden"}></file-input>`)
+                  : ``}
                 </div>
             </div>
         `;
-        this.shadowRoot.innerHTML = inner_str;
+        this.innerHTML = inner_str;
         const replace_list = "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~"
 
-        const rs = this.shadowRoot.querySelectorAll("select.replace_char");
+        const rs = this.querySelectorAll("select.replace_char");
         rs.forEach(select => {
             for (let i = 0; i < replace_list.length; i++) {
                 let option = document.createElement("option");
@@ -535,37 +342,37 @@ class BinaryTextarea extends HTMLElement {
                 select.appendChild(option);
             }
         });
-        const r0 = this.shadowRoot.querySelector(`select#${idbar}base64_replace_add`);
+        const r0 = this.querySelector(`select#${idbar}base64_replace_add`);
         r0.children[replace_list.indexOf("+")].selected=true;
-        const r1 = this.shadowRoot.querySelector(`select#${idbar}base64_replace_backslash`);
+        const r1 = this.querySelector(`select#${idbar}base64_replace_backslash`);
         r1.children[replace_list.indexOf("/")].selected=true;
-        const r2 = this.shadowRoot.querySelector(`select#${idbar}base64_replace_equal`);
+        const r2 = this.querySelector(`select#${idbar}base64_replace_equal`);
         r2.children[replace_list.indexOf("=")].selected=true;
 
-        const typeChoiceField = this.shadowRoot.querySelector(`#${idbar}type_choice_field`);
-        const base64ReplaceField = this.shadowRoot.querySelector(`#${idbar}base64_replace_field`);
+        const typeChoiceField = this.querySelector(`#${idbar}type_choice_field`);
+        const base64ReplaceField = this.querySelector(`#${idbar}base64_replace_field`);
 
         typeChoiceField.querySelectorAll('input[type="radio"]').forEach(radio => {
             radio.addEventListener('change', (event) => {
                 if (event.target.checked) {
                     base64ReplaceField.className = event.target.value !== '3' ? "base64_replace_field_hidden" : "base64_replace_field";
                     if(output){
-                        const hexParamField = this.shadowRoot.querySelector(`#${idbar}hex_field`);
+                        const hexParamField = this.querySelector(`#${idbar}hex_field`);
                         hexParamField.className = event.target.value !== '2' ? "hex_field_hidden" : "hex_field";
                     }
                 }
             });
         });
         if(file){
-            const input_text = this.shadowRoot.querySelector(`#${idbar}input_text`);
-            const file_input = this.shadowRoot.querySelector(`#${idbar}input_file`);
-            const file_output = this.shadowRoot.querySelector(`#${idbar}output_path`);
+            const input_text = this.querySelector(`#${idbar}input_text`);
+            const file_input = this.querySelector(`#${idbar}input_file`);
+            const file_output = this.querySelector(`#${idbar}output_path`);
             typeChoiceField.querySelectorAll('input[type="radio"]').forEach(radio => {
                 radio.addEventListener('change', (event) => {
                     if (event.target.checked) {
                         input_text.hidden = event.target.value === '4';
                         if(!output){
-                            file_input.hidden_self(event.target.value === '4');
+                            file_input.hidden_self(event.target.value !== '4');
                             if(this.bindOutput!=="" && document.querySelector(`binary-textarea#${this.bindOutput}`)!==null){
                                 if(event.target.value === '4'){
                                     document.querySelector(`binary-textarea#${this.bindOutput}`).lockFile();
@@ -585,12 +392,12 @@ class BinaryTextarea extends HTMLElement {
 
     get value(){
         const idbar = this.id === null || this.id === "" ? "" : this.id + "-";
-        let selectedValue = this.shadowRoot.querySelector(`input[name="${idbar}input_type"]:checked`).value;
+        let selectedValue = this.querySelector(`input[name="${idbar}input_type"]:checked`).value;
         selectedValue = parseInt(selectedValue);
         if(!this.output){
             let data = {
                 type: selectedValue,
-                input: this.shadowRoot.getElementById(`${idbar}input_text`).value
+                input: this.querySelector(`#${idbar}input_text`).value
             }
             if (selectedValue === 1) {
                 data.input = data.input.trim();
@@ -612,11 +419,11 @@ class BinaryTextarea extends HTMLElement {
             else if (selectedValue === 3) {
                 data.input = data.input.trim();
                 let c0, c1, c2;
-                const r0 = this.shadowRoot.querySelector(`#${idbar}base64_replace_add`);
+                const r0 = this.querySelector(`#${idbar}base64_replace_add`);
                 c0 = r0.value;
-                const r1 = this.shadowRoot.querySelector(`#${idbar}base64_replace_backslash`);
+                const r1 = this.querySelector(`#${idbar}base64_replace_backslash`);
                 c1 = r1.value;
-                const r2 = this.shadowRoot.querySelector(`#${idbar}base64_replace_equal`);
+                const r2 = this.querySelector(`#${idbar}base64_replace_equal`);
                 c2 = r2.value;
                 if (c0 === c1 || c1 == c2 || c2 == c1) {
                     throw new Error('invalid char string');
@@ -638,8 +445,8 @@ class BinaryTextarea extends HTMLElement {
                 }
             }
             else if (selectedValue === 4) {
-                data.input = this.shadowRoot.getElementById(`${idbar}input_file`).file_paths[0];
-                this.shadowRoot.getElementById(`${idbar}input_file`).clear()
+                data.input = this.querySelector(`#${idbar}input_file`).file_paths[0];
+                this.querySelector(`#${idbar}input_file`).clear()
             }
             return data;
         }
@@ -648,15 +455,15 @@ class BinaryTextarea extends HTMLElement {
                 type: selectedValue,
             }
             if (selectedValue === 2) {
-                data.isUpper = this.shadowRoot.querySelector(`input[name="${idbar}hex_param"]:checked`).value === "1";
+                data.isUpper = this.querySelector(`input[name="${idbar}hex_param"]:checked`).value === "1";
             }
             else if (selectedValue === 3) {
                 let c0, c1, c2;
-                const r0 = this.shadowRoot.querySelector(`#${idbar}base64_replace_add`);
+                const r0 = this.querySelector(`#${idbar}base64_replace_add`);
                 c0 = r0.value;
-                const r1 = this.shadowRoot.querySelector(`#${idbar}base64_replace_backslash`);
+                const r1 = this.querySelector(`#${idbar}base64_replace_backslash`);
                 c1 = r1.value;
-                const r2 = this.shadowRoot.querySelector(`#${idbar}base64_replace_equal`);
+                const r2 = this.querySelector(`#${idbar}base64_replace_equal`);
                 c2 = r2.value;
                 if (c0 === c1 || c1 == c2 || c2 == c1) {
                     throw new Error('invalid char string');
@@ -666,7 +473,7 @@ class BinaryTextarea extends HTMLElement {
                 data.replace2 = c2;
             }
             else if (selectedValue === 4) {
-                data.path = this.shadowRoot.querySelector(`#${idbar}output_path`).value;
+                data.path = this.querySelector(`#${idbar}output_path`).value;
             }
             return data;
         }
@@ -677,9 +484,9 @@ class BinaryTextarea extends HTMLElement {
             throw new Error('can not change in input mode');
         }
         const idbar = this.id===null || this.id===""?"":this.id+"-";
-        this.shadowRoot.getElementById(`${idbar}input_text`).removeAttribute("readonly");
-        this.shadowRoot.getElementById(`${idbar}input_text`).value = string;
-        this.shadowRoot.getElementById(`${idbar}input_text`).setAttribute("readonly","");
+        this.querySelector(`#${idbar}input_text`).removeAttribute("readonly");
+        this.querySelector(`#${idbar}input_text`).value = string;
+        this.querySelector(`#${idbar}input_text`).setAttribute("readonly","");
     }
 
     setFile(path){
@@ -687,16 +494,16 @@ class BinaryTextarea extends HTMLElement {
             throw new Error('can not change in input mode');
         }
         const idbar = this.id===null || this.id===""?"":this.id+"-";
-        this.shadowRoot.getElementById(`${idbar}output_path`).value = path;
+        this.querySelector(`#${idbar}output_path`).value = path;
     }
 
     lockFile(){
         let idbar = this.id===null || this.id===""?"":this.id+"-";
-        let file_opinion = this.shadowRoot.getElementById(`${idbar}input_type_file`);
+        let file_opinion = this.querySelector(`#${idbar}input_type_file`);
         if(file_opinion){
             file_opinion.checked = true;
             file_opinion.dispatchEvent(new Event('change'));
-            this.shadowRoot.querySelector(`#${idbar}type_choice_field`).querySelectorAll('input[type="radio"]').forEach(radio => {
+            this.querySelector(`#${idbar}type_choice_field`).querySelectorAll('input[type="radio"]').forEach(radio => {
                 radio.disabled = true;
             });
         }
@@ -704,11 +511,11 @@ class BinaryTextarea extends HTMLElement {
 
     unlockFile(){
         let idbar = this.id===null || this.id===""?"":this.id+"-";
-        let default_opinion = this.shadowRoot.getElementById(`${idbar}input_type_${this.default_type}`);
+        let default_opinion = this.querySelector(`#${idbar}input_type_${this.default_type}`);
         if(default_opinion){
             default_opinion.checked = true;
             default_opinion.dispatchEvent(new Event('change'));
-            this.shadowRoot.querySelector(`#${idbar}type_choice_field`).querySelectorAll('input[type="radio"]').forEach(radio => {
+            this.querySelector(`#${idbar}type_choice_field`).querySelectorAll('input[type="radio"]').forEach(radio => {
                 radio.disabled = false;
             });
         }
@@ -720,7 +527,6 @@ class BinaryInput extends HTMLElement {
     id=""
     constructor() {
         super();
-        this.attachShadow({ mode: 'open' });
     }
     static get observedAttributes() {
         return ['id','password'];
@@ -739,64 +545,12 @@ class BinaryInput extends HTMLElement {
     }
 
     render() {
-        let theme = fmtTheme(this);
         const id = this.getAttribute('id');
-        console.log(id,theme);
+        console.log(id);
         this.id = id;
-        const idbar = id===null || id===""?"":id+"-";
+        const idbar = fmtIdBar(id);
         const password = this.hasAttribute("password");
         const inner_str = `
-            <style>
-                .binary_input{
-                    padding: 5px;
-                    width: 100%;
-                    display: flex;
-                    flex-direction: column;
-                }
-                .type_choice_field{
-                    width: 100%;
-                    height: 30%;
-                    display: flex;
-                    flex-direction: row;
-                    flex-wrap: nowrap;
-                    align-items: center;
-                    justify-content: flex-start;
-                }
-                .type_choice_label{
-                    margin-right: 5px;
-                }
-                .type_param_field{
-                    height: 30%;
-                    display: flex;
-                    flex-direction: column;
-                    flex-wrap: wrap;
-                    align-items: center;
-                    align-content: flex-start;
-                }
-                .base64_replace_field{
-                    display: flex;
-                    flex-direction: row;
-                    flex-wrap: wrap;
-                    align-items: center;
-                    justify-content: flex-start;
-                }
-                .base64_replace_field_hidden{
-                    display: none;
-                }
-                .input_field{
-                    width: 100%;
-                    display: flex;
-                    flex-direction: column;
-                }
-                .input_text{
-                    width: 95%;
-                }
-                select,
-                input[type="text"]{
-                    background-color: ${theme!=="dark"?"#303030":"#FFFFFF"};
-                    color: ${theme!=="dark"?"#FFFFFF":"#000000"};
-                }
-            </style>
             <div class="binary_input" id="${idbar}binary_input">
                 <div class="type_choice_field" id="${idbar}type_choice_field">
                     <input type="radio" name="${idbar}input_type" value="0" id="${idbar}input_type_utf8" checked>
@@ -823,10 +577,10 @@ class BinaryInput extends HTMLElement {
                 </div>
             </div>
         `;
-        this.shadowRoot.innerHTML = inner_str;
+        this.innerHTML = inner_str;
         const replace_list = "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~"
 
-        const rs = this.shadowRoot.querySelectorAll("select.replace_char");
+        const rs = this.querySelectorAll("select.replace_char");
         rs.forEach(select => {
             for (let i = 0; i < replace_list.length; i++) {
                 let option = document.createElement("option");
@@ -835,15 +589,15 @@ class BinaryInput extends HTMLElement {
                 select.appendChild(option);
             }
         });
-        const r0 = this.shadowRoot.querySelector(`select#${idbar}base64_replace_add`);
+        const r0 = this.querySelector(`select#${idbar}base64_replace_add`);
         r0.children[replace_list.indexOf("+")].selected=true;
-        const r1 = this.shadowRoot.querySelector(`select#${idbar}base64_replace_backslash`);
+        const r1 = this.querySelector(`select#${idbar}base64_replace_backslash`);
         r1.children[replace_list.indexOf("/")].selected=true;
-        const r2 = this.shadowRoot.querySelector(`select#${idbar}base64_replace_equal`);
+        const r2 = this.querySelector(`select#${idbar}base64_replace_equal`);
         r2.children[replace_list.indexOf("=")].selected=true;
 
-        const typeChoiceField = this.shadowRoot.querySelector(`#${idbar}type_choice_field`);
-        const base64ReplaceField = this.shadowRoot.querySelector(`#${idbar}base64_replace_field`);
+        const typeChoiceField = this.querySelector(`#${idbar}type_choice_field`);
+        const base64ReplaceField = this.querySelector(`#${idbar}base64_replace_field`);
 
         typeChoiceField.querySelectorAll('input[type="radio"]').forEach(radio => {
             radio.addEventListener('change', (event) => {
@@ -856,11 +610,11 @@ class BinaryInput extends HTMLElement {
 
     get value(){
         const idbar = this.id === null || this.id === "" ? "" : this.id + "-";
-        let selectedValue = this.shadowRoot.querySelector(`input[name="${idbar}input_type"]:checked`).value;
+        let selectedValue = this.querySelector(`input[name="${idbar}input_type"]:checked`).value;
         selectedValue = parseInt(selectedValue);
         let data = {
             type: selectedValue,
-            input: this.shadowRoot.getElementById(`${idbar}input_text`).value
+            input: this.querySelector(`#${idbar}input_text`).value
         }
         if (selectedValue === 1) {
             data.input = data.input.trim();
@@ -882,11 +636,11 @@ class BinaryInput extends HTMLElement {
         else if (selectedValue === 3) {
             data.input = data.input.trim();
             let c0, c1, c2;
-            const r0 = this.shadowRoot.querySelector(`#${idbar}base64_replace_add`);
+            const r0 = this.querySelector(`#${idbar}base64_replace_add`);
             c0 = r0.value;
-            const r1 = this.shadowRoot.querySelector(`#${idbar}base64_replace_backslash`);
+            const r1 = this.querySelector(`#${idbar}base64_replace_backslash`);
             c1 = r1.value;
-            const r2 = this.shadowRoot.querySelector(`#${idbar}base64_replace_equal`);
+            const r2 = this.querySelector(`#${idbar}base64_replace_equal`);
             c2 = r2.value;
             if (c0 === c1 || c1 == c2 || c2 == c1) {
                 throw new Error('invalid char string');
@@ -915,20 +669,19 @@ customElements.define('binary-input', BinaryInput);
 class MessageBox extends HTMLElement {
     constructor() {
         super();
-        this.attachShadow({ mode: 'open' });
     }
     connectedCallback() {
         this.render();
         this.setupEventListeners();
     }
     setupEventListeners(){
-        let close = this.shadowRoot.querySelector('.msg_close');
+        let close = this.querySelector('.msg_close');
         close.addEventListener('click', (event) => {
             this.remove();
         });
-        let area = this.shadowRoot.querySelector('.msg_area');
+        let area = this.querySelector('.msg_area');
         area.addEventListener("dblclick", (event) => {
-            let text = this.shadowRoot.querySelector(".msg_content");
+            let text = this.querySelector(".msg_content");
             window.electron.saveClipBoard(text.textContent).then(result => {
                 if(result){
                     text.textContent = "已复制到剪贴板";
@@ -943,83 +696,11 @@ class MessageBox extends HTMLElement {
         }
     }
     render(){
-        const theme = fmtTheme(this);
         const type = this.getAttribute("type");
         const type_icon = type==="0"?"✔️":type==="1"?"❌":"⚠️";
         const type_title = type==="0"?"成功":type==="1"?"错误":"警告";
         const text = this.textContent.trim();
         const inner_str=`
-        <style>
-        @font-face {
-            font-family: "single";
-            src: url("resource/NotoSansSC-VF.ttf");
-        }
-        @font-face{
-            font-family: "emoji";
-            src: url("resource/NotoColorEmoji.ttf");
-        }
-        .msg_title_emoji{
-            font-family : "emoji";
-        }
-        @keyframes title_showing{
-            0%{
-                opacity: 0;
-                visibility: hidden;
-            }
-            100%{
-                opacity: 1;
-                visibility: visible;
-            }
-        }
-        .msg_area{
-            animation: title_showing 0.5s;
-            width: 95%;
-            background-color: ${theme!=="dark"?"#1E1F2D":"#FFFFFF"};
-            color: ${theme!=="dark"?"#FFFFFF":"#000000"};
-            font-family: "single";
-            margin: 1%;
-            border: 2px solid ${theme!=="dark"?"#22b590":"#000000"};
-            border-radius: 10px;
-            display: flex;
-            flex-direction: column;
-        }
-        .msg_title_field{
-            margin: 0 5% 0 5%;
-            width: 90%;
-            display: flex;
-            flex-direction: row;
-        }
-        .msg_close{
-            margin-left: auto;
-            border-radius: 50%;
-            cursor:pointer;
-        }
-        .msg_content{
-            margin: 0 5% 0 5%;
-            white-space: pre-wrap;
-            word-break: break-all;
-        }
-        .msg_progress_field{
-            margin: 0 5% 0 5%;
-            display: flex;
-            justify-content: center;
-        }
-        .msg_progress{
-            width: 100%;
-            height: 2px;
-            background-color: #6060d6;
-            animation: progress 1.5s;
-        }
-        @keyframes progress {
-            0%{
-                width: 100%;
-            }
-            100%{
-                width: 0;
-            }
-        }
-        
-        </style>
         <div class="msg_area">
             <div class="msg_title_field">
                 <a class="msg_title_emoji">${type_icon}</a>
@@ -1032,7 +713,7 @@ class MessageBox extends HTMLElement {
             </div>
         </div>
         `;
-        this.shadowRoot.innerHTML = inner_str;
+        this.innerHTML = inner_str;
     }
 }
 customElements.define('message-box', MessageBox);
@@ -1044,7 +725,6 @@ class TaskTag extends HTMLElement {
     result = {};
     constructor() {
         super();
-        this.attachShadow({ mode: 'open' });
         this.addEventListener("click", (e) => {
             document.querySelectorAll("task-tag").forEach(elem=>{
                 elem.choose(false);
@@ -1090,7 +770,7 @@ class TaskTag extends HTMLElement {
             taskBack.style.display = "none";
         });
         this.addEventListener("dblclick", (e) => {
-            let area = this.shadowRoot.querySelector(".task_area_active");
+            let area = this.querySelector(".task_area_active");
             if(area===null) return;
             area.className = "task_area";
             document.querySelectorAll("task-label").forEach(elem=>{
@@ -1109,10 +789,9 @@ class TaskTag extends HTMLElement {
         this.setupEventListeners();
     }
     render(){
-        const theme = fmtTheme(this);
         let taskId = parseInt(this.getAttribute("taskId"));
         this.taskId = taskId;
-        let type = this.getAttribute("type");//hash encrypt decrypt
+        let type = this.getAttribute("type");
         let type_text = "";
         {
             if (type === "0") {
@@ -1138,88 +817,31 @@ class TaskTag extends HTMLElement {
             }
         }
         let inner_str= `
-        <style>
-            .task_area{
-                display: flex;
-                flex-direction: column;
-                border: 1px solid black;
-                background-color: ${theme==="dark"?"#504d73":"#66CCFF"};
-                border-radius: 10px;
-                border-color: ${theme==="dark"?"#4188aa":"#000000"};
-                padding: 10px;
-                margin: 2%;
-            }
-            .task_area_active{
-                display: flex;
-                flex-direction: column;
-                border: 1px solid #027c02;
-                background-color: ${theme==="dark"?"#706ca3":"#3bbbfa"};
-                border-radius: 10px;
-                padding: 10px;
-                margin: 2%;
-            }
-            #task_progress_field{
-                position: relative;
-                height: 15px;
-                border-radius: 10px;
-                border: ${theme==="dark"?"#66CCFF":"#12432a"} solid 1px ;
-                display: flex;
-            }
-            #task_progress{
-                width: 0;
-                background-color: #2ba668;
-                height: 15px;
-                border-radius: 10px;
-            }
-            #task_progress_text{
-                position: absolute;
-                font-size: 12px;
-                left: 50%;
-                top: 50%;
-                transform: translate(-50%, -50%);
-            }
-            #task_operators{
-                display: flex;
-                flex-direction: row;
-                justify-content: space-evenly;
-            }
-            #task_status{
-                color: #ff0000;
-            }
-            .task_operator{
-                background-color: ${theme==="dark"?"#8784a6":"#37e0e6"};
-                padding: 2px;
-                border-radius: 5px;
-            }
-            .task_operator:hover{
-                background-color: ${theme==="dark"?"#9f9cba":"#2db0b5"};
-            }
-        </style>
         <div class="task_area">
             <div class="task_line">${type_text}</div>
-            <div id="task_status" class="task_line">${status_text}</div>
+            <div class="task_status task_line">${status_text}</div>
             ${status === "0" || status === "4" ? "" : `
-            <div id="task_progress_field" class="task_line">
-                <div id="task_progress"></div>
-                <div id="task_progress_text">0%</div>
+            <div class="task_progress_field task_line">
+                <div class="task_progress"></div>
+                <div class="task_progress_text">0%</div>
             </div>
-            <div id="task_excepted" class="task_line">预计剩余:</div>
+            <div class="task_excepted task_line">预计剩余:</div>
             `}
-            <div id="task_operators" class="task_line">
-                ${status === "0" ? `<div id="task_cancel" class="task_operator">取消</div>` : ""}
-                ${status === "2" ? `<div id="task_pause" class="task_operator">暂停</div>` : ""}
-                ${status === "3" ? `<div id="task_resume" class="task_operator">恢复</div>` : ""}
-                ${status === "3" || status === "2" ? `<div id="task_stop" class="task_operator">停止</div>` : ""}
-                ${status === "4" ? `<div id="task_delete" class="task_operator">移除</div>` : ""}
+            <div class="task_operators task_line">
+                ${status === "0" ? `<div class="task_cancel task_operator">取消</div>` : ""}
+                ${status === "2" ? `<div class="task_pause task_operator">暂停</div>` : ""}
+                ${status === "3" ? `<div class="task_resume task_operator">恢复</div>` : ""}
+                ${status === "3" || status === "2" ? `<div class="task_stop task_operator">停止</div>` : ""}
+                ${status === "4" ? `<div class="task_delete task_operator">移除</div>` : ""}
             </div>
         </div>`;
-        this.shadowRoot.innerHTML = inner_str;
+        this.innerHTML = inner_str;
     }
 
     setupEventListeners() {
         let taskId = this.taskId;
         if (this.status === "0") {
-            let cancel = this.shadowRoot.getElementById("task_cancel");
+            let cancel = this.querySelector(".task_cancel");
             if(cancel){
                 cancel.addEventListener("click", (event)=>{
                     window.electron.cancel(taskId).then(()=>{
@@ -1231,7 +853,7 @@ class TaskTag extends HTMLElement {
             }
         }
         else if (this.status === "2") {
-            let pause = this.shadowRoot.getElementById("task_pause");
+            let pause = this.querySelector(".task_pause");
             if(pause){
                 pause.addEventListener("click", (event)=>{
                     window.electron.pause(taskId).then(()=>{
@@ -1239,7 +861,7 @@ class TaskTag extends HTMLElement {
                     })
                 });
             }
-            let stop = this.shadowRoot.getElementById("task_stop");
+            let stop = this.querySelector(".task_stop");
             if(stop){
                 stop.addEventListener("click", (event)=>{
                     window.electron.cancel(taskId).then(()=>{
@@ -1249,7 +871,7 @@ class TaskTag extends HTMLElement {
             }
         }
         else if (this.status === "3") {
-            let resume = this.shadowRoot.getElementById("task_resume");
+            let resume = this.querySelector(".task_resume");
             if(resume){
                 resume.addEventListener("click", (event)=>{
                     window.electron.resume(taskId).then(()=>{
@@ -1257,7 +879,7 @@ class TaskTag extends HTMLElement {
                     })
                 });
             }
-            let stop = this.shadowRoot.getElementById("task_stop");
+            let stop = this.querySelector(".task_stop");
             if(stop){
                 stop.addEventListener("click", (event)=>{
                     window.electron.cancel(taskId).then(()=>{
@@ -1267,7 +889,7 @@ class TaskTag extends HTMLElement {
             }
         }
         else if (this.status === "4") {
-            let delete_ = this.shadowRoot.getElementById("task_delete");
+            let delete_ = this.querySelector(".task_delete");
             if(delete_){
                 delete_.addEventListener("click", (event)=>{
                     task_info_map.delete(taskId);
@@ -1294,15 +916,15 @@ class TaskTag extends HTMLElement {
     }
 
     updateExcepted(excepted){
-        let excepted_line = this.shadowRoot.getElementById("task_excepted");
+        let excepted_line = this.querySelector(".task_excepted");
         if(excepted_line!==null){
             excepted_line.textContent = `预计剩余:${excepted}`;
         }
     }
 
     updateProgress(progress){
-        let task_progress = this.shadowRoot.getElementById("task_progress");
-        let task_progress_text = this.shadowRoot.getElementById("task_progress_text");
+        let task_progress = this.querySelector(".task_progress");
+        let task_progress_text = this.querySelector(".task_progress_text");
         let persent = `${progress*100}`.slice(0,5)+"%";
         if(task_progress!==null){
             task_progress.style.width = persent;
@@ -1314,12 +936,12 @@ class TaskTag extends HTMLElement {
 
     choose(should){
         if(should){
-            let area = this.shadowRoot.querySelector(".task_area");
+            let area = this.querySelector(".task_area");
             if(area===null) return;
             area.className = "task_area_active";
         }
         else{
-            let area = this.shadowRoot.querySelector(".task_area_active");
+            let area = this.querySelector(".task_area_active");
             if(area===null) return;
             area.className = "task_area";
         }
@@ -1361,42 +983,19 @@ customElements.define('task-tag', TaskTag);
 class TaskLable extends HTMLElement{
     constructor() {
         super();
-        this.attachShadow({ mode: 'open' });
     }
     render(){
-        const theme = fmtTheme(this);
         let label = this.getAttribute("label");
         label = label===null?"":label;
         let text = this.textContent;
-        const innst_str=`
-            <style>
-            .task_label{
-                margin: 0 2%;
-                padding: 0 0 3px 5px;
-                font-size: 13px;
-                color: ${theme!=="dark"?"#39C5BB":"#666666"};
-            }
-            .task_line_context_field{
-                margin: 0 5%;
-                padding: 0 5px;
-            }
-            .task_line_context{
-                width: 100%;
-                font-size: 17px;
-                background-color: #00000000;
-                border: none;
-            }
-            .task_line_context:focus{
-                outline: none;
-            }
-            </style>
+        const inner_str=`
             <div class="task_label">${label}</div>
             <div class="task_line_context_field">
                 <div class="task_line_context"></div>
             </div>
         `;
-        this.shadowRoot.innerHTML=innst_str;
-        let value_con = this.shadowRoot.querySelector(".task_line_context");
+        this.innerHTML=inner_str;
+        let value_con = this.querySelector(".task_line_context");
         if(text===""){
             value_con.style.cursor="default"
         }
@@ -1408,20 +1007,17 @@ class TaskLable extends HTMLElement{
         this.render();
     }
     setLabel(label){
-        let label_con = this.shadowRoot.querySelector(".task_label");
+        let label_con = this.querySelector(".task_label");
         label_con.textContent = label;
     }
     setValue(value){
-        let value_con = this.shadowRoot.querySelector(".task_line_context");
+        let value_con = this.querySelector(".task_line_context");
         if(value===""){
             value_con.style.cursor="default"
         }
         else{
             value_con.style.cursor = "text";
         }
-        // value_con.removeAttribute("readonly");
-        // value_con.value = value;
-        // value_con.setAttribute("readonly","");
         value_con.textContent = value;
     }
 }
@@ -1431,7 +1027,6 @@ var task_info_map = new Map();
 function updateTask(){
     let running = document.getElementById("task_running_lists");
     let waiting = document.getElementById("task_waiting_lists");
-    // console.log("info",task_info_map);
     for(const [k,v] of task_info_map){
         let task_tag = document.querySelector(`task-tag[taskId="${k+""}"]`)
         if(task_tag){
@@ -1470,12 +1065,10 @@ function aUpdateTask(){
 }
 var task_result_map = new Map();
 function updateResult(){
-    // console.log("result",task_result_map);
     for(const [k,v] of task_result_map){
         let task_tag = document.querySelector(`task-tag[taskId="${k+""}"]`);
         if(task_tag){
             task_tag.result = v;
-            // console.log(task_tag);
         }
     }
 }
@@ -1493,7 +1086,7 @@ setInterval(() => {
     aUpdateTask();
     aUpdateResult();
 }, 500);
-//弹窗显示
+
 function showing(type,msg){
     let msgDialog = document.getElementById("msg_dialog");
     let message_box = document.createElement("message-box");
@@ -1531,11 +1124,8 @@ document.getElementById("exchange_button").addEventListener('click', (event)=>{
     try{
         input_data = input.value;
         output_data = output.value;
-        // console.log(input_data);
-        // console.log(output_data);
     }
     catch(err){
-        // console.log(err);
         showing(1,err);
         return;
     }
@@ -1556,7 +1146,6 @@ var hash_list;
 function hash_init(result){
     let hash_name = document.getElementById("hash_name");
     hash_list = result;
-    // console.log(result);
     for (const key of Object.keys(hash_list)) {
         let option = document.createElement("option");
         option.textContent = key;
@@ -1585,7 +1174,6 @@ function hash_init(result){
             hash_param.firstChild.remove();
         }
         for(let [key,value] of Object.entries(hash_list[event.target.value].params)){
-            // console.log(key,value);
             let label = document.createElement("div")
             label.textContent = key;
             hash_param.appendChild(label);
@@ -1641,7 +1229,6 @@ document.getElementById("hash_button").addEventListener('click', (event)=>{
         })
         hash.params = {};
         params_input.forEach(item=>{
-            // hash.params[item.id.split("-")[1]] = item.value;
             if(item.tagName.toLowerCase()==="input"){
                 if(item.type==="number"){
                     hash.params[item.id.split("-")[1]] = parseInt(item.value);
@@ -1681,7 +1268,6 @@ document.getElementById("hash_button").addEventListener('click', (event)=>{
 
 var crypto_stream_list = {};
 function init_crypto_stream(list){
-    // console.log(list);
     crypto_stream_list = list;
     {
         let alg_select = document.getElementById("encrypt_stream_algorithm_name");
@@ -1877,7 +1463,6 @@ ainit_crypto_block();
 var crypto_mode_list = {}
 function init_crypto_mode(list){
     crypto_mode_list = list;
-    // console.log(crypto_mode_list);
     {
         let mode_name = document.getElementById("encrypt_block_mode_name");
         for(let [key,value] of Object.entries(crypto_mode_list)){
@@ -2068,7 +1653,6 @@ document.getElementById("encrypt_button").addEventListener("click", (event)=>{
             throw Error("input type must match output when input file");
         }
         let key = document.getElementById("encrypt_key").value;
-        // console.log(key);
         let encrypt_type = document.querySelector("input[type=\"radio\"][name=\"encrypt_type\"]:checked").value;
         args.input = input;
         args.output = output;
@@ -2086,7 +1670,6 @@ document.getElementById("encrypt_button").addEventListener("click", (event)=>{
                 block: alg_bs,
                 key: alg_ks
             }
-            // console.log(alg);
 
             let mode_name = document.getElementById("encrypt_block_mode_name").value;
             let padding_name = document.getElementById("encrypt_block_padding_name").value;
@@ -2114,7 +1697,6 @@ document.getElementById("encrypt_button").addEventListener("click", (event)=>{
                 padding:padding_name,
                 params:params
             }
-            // console.log(mode);
             args.cipher = {};
             args.cipher.algorithm = alg;
             args.cipher.mode = mode;
@@ -2162,7 +1744,6 @@ document.getElementById("decrypt_button").addEventListener("click", (event)=>{
             throw Error("input type must match output when input file");
         }
         let key = document.getElementById("decrypt_key").value;
-        // console.log(key);
         let encrypt_type = document.querySelector("input[type=\"radio\"][name=\"encrypt_type\"]:checked").value;
         args.input = input;
         args.output = output;
@@ -2180,7 +1761,6 @@ document.getElementById("decrypt_button").addEventListener("click", (event)=>{
                 block: alg_bs,
                 key: alg_ks
             }
-            // console.log(alg);
 
             let mode_name = document.getElementById("decrypt_block_mode_name").value;
             let padding_name = document.getElementById("decrypt_block_padding_name").value;
@@ -2208,7 +1788,6 @@ document.getElementById("decrypt_button").addEventListener("click", (event)=>{
                 padding:padding_name,
                 params:params
             }
-            // console.log(mode);
             args.cipher = {};
             args.cipher.algorithm = alg;
             args.cipher.mode = mode;
@@ -2248,19 +1827,7 @@ document.getElementById("decrypt_button").addEventListener("click", (event)=>{
     })
 })
 
-function rerender(elem){
-    elem.render();
-}
-function reflush(){
-    document.querySelectorAll("file-select").forEach(rerender);
-    document.querySelectorAll("binary-textarea").forEach(rerender);
-    document.querySelectorAll("binary-input").forEach(rerender);
-    document.querySelectorAll("message-box").forEach(rerender);
-    document.querySelectorAll("task-tag").forEach(rerender);
-    document.querySelectorAll("task-label").forEach(rerender);
-}
 document.getElementById("setting_theme").addEventListener("change", (event)=>{
     changeTheme();
     initCss();
-    reflush();
 })

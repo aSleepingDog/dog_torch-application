@@ -111,7 +111,7 @@
                     <div class="crypto_field_title">元数据</div>
                     <label for="decrypt_with_header">是否携带头部</label>
                     <input type="checkbox" id="decrypt_with_header">
-                    <span>(如果加加密时添加了元数据头部 请勾选此项)</span>
+                    <span>(如果加密时添加了元数据头部 请勾选此项)</span>
                 </div>
                 <div id="decrypt_cipher">
                     <div>
@@ -176,11 +176,15 @@
             </div>
         </div>
         <div class="context_frame" id="setting-frame">
-            <input type="checkbox" id="setting_theme">
+            <div class="context_title">系统设置</div>
+            <div>
+                <label for="setting_theme">颜色模式切换</label>
+                <input type="checkbox" id="setting_theme">
+            </div>
         </div>
         <div class="context_frame" id="about-frame">
             <span>dog_torch简单密码学工具 electron实现</span>
-            <span>版本:20260912</span>
+            <span>版本:20261024</span>
             <label for="header-img">开发者</label>
             <img src="./resource/header.png" alt="" id="header-img">
             <span>技术栈</span>
