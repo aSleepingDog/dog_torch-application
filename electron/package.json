@@ -55,7 +55,7 @@
       "shortcutName": "DogTorch"
     },
     "linux": {
-      "target": ["AppImage", ".zip"],
+      "target": ["AppImage", ".tar.gz"],
       "icon": "icon.ico"
     }
   }
