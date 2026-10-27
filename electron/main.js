@@ -1721,6 +1721,7 @@ document.getElementById("encrypt_button").addEventListener("click", (event)=>{
         showing("1",e.message)
     }
     window.electron.encryptData(args).then((data)=>{
+        let output = document.getElementById("encrypt_output");
         if(data.type==="success"){
             if(typeof(data.result)==="string"){
                 output.setText(data.result);
@@ -1813,6 +1814,7 @@ document.getElementById("decrypt_button").addEventListener("click", (event)=>{
 
     }
     window.electron.decryptData(args).then((data)=>{
+        let output = document.getElementById("decrypt_output");
         if(data.type==="success"){
             if(typeof(data.result)==="string"){
                 output.setText(data.result);

@@ -1,11 +1,17 @@
 const electron = require('electron');
-const dog_torch = require('./native/dog_torch_napi.node');
 const app = electron.app;
 const BrowserWindow = electron.BrowserWindow;
 const ipcMain = electron.ipcMain;
 const clipboard = electron.clipboard;
 const { Menu, MenuItem } = require('electron');
 const path=require('path');
+var dog_torch = null;
+if(app.isPackaged){
+    dog_torch = require(path.join(path.dirname(__dirname),"native/dog_torch_napi.node"));
+}
+else{
+    dog_torch = require(path.join(__dirname,"native/dog_torch_napi.node"));
+}
 // console.log(dog_torch.crypto.sym.stream.algorithm.all());
 // console.log(dog_torch.crypto.sym.block.algorithm.all());
 var taskPool = new dog_torch.async.ThreadPool();

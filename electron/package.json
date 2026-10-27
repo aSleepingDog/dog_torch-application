@@ -1,20 +1,20 @@
 {
   "name": "dog_torch_electron",
-  "version": "1.0.0",
+  "version": "1.1.1",
   "description": "simple cryptology tool based on electron",
   "main": "index.js",
   "scripts": {
-    "start": "electron .",
+    "start:win": "electron .",
+    "start:linux": "electron . --no-sandbox --ozone-platform=x11",
     "pack": "electron-builder --dir",
     "dist:win": "electron-builder --win --x64",
-    "dist:mac": "electron-builder --mac --x64 --arm64",
-    "dist:linux": "electron-builder --linux"
+    "dist:linux": "electron-builder --linux --x64"
   },
   "author": "aSleepingDog",
   "license": "MIT",
   "devDependencies": {
-    "electron": "^45.0.0-beta.6",
-    "electron-builder": "^26.18.0"
+    "electron": "^43.0.0",
+    "electron-builder": "^26.15.3"
   },
   "build": {
     "appId": "com.sleepingdog.dogtorch",
@@ -54,13 +54,8 @@
       "createDesktopShortcut": true,
       "shortcutName": "DogTorch"
     },
-    "mac": {
-      "target": ["dmg", "zip"],
-      "category": "public.app-category.utilities",
-      "icon": "icon.ico"
-    },
     "linux": {
-      "target": ["AppImage", "deb"],
+      "target": ["AppImage", ".zip"],
       "icon": "icon.ico"
     }
   }
