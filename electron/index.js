@@ -137,7 +137,7 @@ async function allHash(){
         let result = {};
         result.region = []
         region = new dog_torch.NumberIterator(config.region);
-        while(region.haveNext()){
+        while(region.hasNext()){
             result.region.push(region.next());
         }
         result.params = {};
@@ -185,12 +185,12 @@ async function allStreamCrypto(){
         list[config.name] = {};
         list[config.name].effectives = [];
         let effectiveIt = new dog_torch.NumberIterator(config.effectiveRegion);
-        while(effectiveIt.haveNext()){
+        while(effectiveIt.hasNext()){
             list[config.name].effectives.push(effectiveIt.next());
         }
         list[config.name].keys = [];
         let keyIt = new dog_torch.NumberIterator(config.keyRegion);
-        while(keyIt.haveNext()){
+        while(keyIt.hasNext()){
             list[config.name].keys.push(keyIt.next());
         }
     });
@@ -208,13 +208,13 @@ async function allBlockCrypto(){
         let result = {};
         let blockIt = new dog_torch.NumberIterator(config.blockRegion);
         let blocks = [];
-        while(blockIt.haveNext()){
+        while(blockIt.hasNext()){
             blocks.push(blockIt.next());
         }
         result["blocks"] = blocks;
         let keyIt = new dog_torch.NumberIterator(config.keyRegion);
         let keys = [];
-        while (keyIt.haveNext()){
+        while (keyIt.hasNext()){
             keys.push(keyIt.next());
         }
         result["keys"] = keys;
