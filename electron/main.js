@@ -550,6 +550,11 @@ class BinaryInput extends HTMLElement {
         this.id = id;
         const idbar = fmtIdBar(id);
         const password = this.hasAttribute("password");
+        const random = this.hasAttribute("random");
+        let randomSize = 0;
+        try{
+            randomSize = parseInt(this.getAttribute("random"));
+        }catch(err){}
         const inner_str = `
             <div class="binary_input" id="${idbar}binary_input">
                 <div class="type_choice_field" id="${idbar}type_choice_field">
@@ -574,6 +579,14 @@ class BinaryInput extends HTMLElement {
                 </div>
                 <div class="input_field">
                     <input type=${password?"password":"text"} class="input_text" type="text" id="${idbar}input_text" rows="5">
+                </div>
+                <div class="input_extra_operator">
+                    ${!random?"":`
+                    <input type="number" value="${randomSize}" min="1" class="input_random_size" id="${idbar}input_random_size">
+                    <div class="input_random_btn" id="${idbar}input_random_btn">随机字节</div>
+                    `}
+                    <div class="input_size_label" id="${idbar}input_size_label">当前长度（字节）</div>
+                    <div class="input_size" id="${idbar}input_size"></div>
                 </div>
             </div>
         `;
@@ -604,8 +617,33 @@ class BinaryInput extends HTMLElement {
                 if (event.target.checked) {
                     base64ReplaceField.className = event.target.value !== '3' ? "base64_replace_field_hidden" : "base64_replace_field"
                 }
+                this.updateValueLen();
             });
         });
+
+        const inputText = this.querySelector(`.input_text`);
+        inputText.addEventListener("input", (event) => {
+            this.updateValueLen();
+        });
+
+        if(random){
+            const inputRandomBtn = this.querySelector(`.input_random_btn`);
+            inputRandomBtn.addEventListener("click", (event) => {
+                let hex = this.querySelector(`#${idbar}input_type_hex`);
+                hex.checked = true;
+                let size = parseInt(this.querySelector(`.input_random_size`).value);
+                const list = "0123456789ABCDEF";
+                let text = ""
+                for (let i = 0; i < size; i++) {
+                    let n = Math.floor(Math.random() * list.length);
+                    text += list[n];
+                    n = Math.floor(Math.random() * list.length);
+                    text += list[n];
+                }
+                inputText.value = text;
+                this.updateValueLen();
+            })
+        }
     }
 
     get value(){
@@ -662,6 +700,75 @@ class BinaryInput extends HTMLElement {
             }
         }
         return data;
+    }
+
+    get valueLen(){
+        const idbar = this.id === null || this.id === "" ? "" : this.id + "-";
+        let selectedValue = this.querySelector(`input[name="${idbar}input_type"]:checked`).value;
+        selectedValue = parseInt(selectedValue);
+        let data = {
+            type: selectedValue,
+            input: this.querySelector(`#${idbar}input_text`).value
+        }
+        if(selectedValue === 0){
+            return new TextEncoder().encode(data.input.trim()).length;
+        }
+        else if (selectedValue === 1) {
+            data.input = data.input.trim();
+            for (let i = 0; i < data.input.length; i++) {
+                if (data.input.charAt(i) !== "1" && data.input.charAt(i) !== "1") {
+                    return 'binary string only contain 0 or 1';
+                }
+            }
+            return data.input.length/8;
+        }
+        else if (selectedValue === 2) {
+            data.input = data.input.trim();
+            const list = "0123456789ABCDEFabcdef";
+            for (let i = 0; i < data.input.length; i++) {
+                if (!list.includes(data.input.charAt(i))) {
+                    return 'the char of hex string must be in 0123456789ABCDEFabcdef';
+                }
+            }
+            return data.input.length%2===0?data.input.length/2:(data.input.length+1)/2;
+        }
+        else if (selectedValue === 3) {
+            data.input = data.input.trim();
+            let c0, c1, c2;
+            const r0 = this.querySelector(`#${idbar}base64_replace_add`);
+            c0 = r0.value;
+            const r1 = this.querySelector(`#${idbar}base64_replace_backslash`);
+            c1 = r1.value;
+            const r2 = this.querySelector(`#${idbar}base64_replace_equal`);
+            c2 = r2.value;
+            if (c0 === c1 || c1 == c2 || c2 == c1) {
+                throw new Error('invalid char string');
+            }
+            while (data.input.indexOf(c0) !== -1 && c0!=='+') {
+                data.input.replace(c0, '+');
+            }
+            while (data.input.indexOf(c1) !== -1 && c1!=='/') {
+                data.input.replace(c1, '/');
+            }
+            while (data.input.indexOf(c2) !== -1 && c2!=='=') {
+                data.input.replace(c2, '=');
+            }
+            const list = "+/=0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+            for (let i = 0; i < data.input.length; i++) {
+                if (!list.includes(data.input.charAt(i))) {
+                    return 'the char of base64 string must be in ' + list;
+                }
+            }
+            if(data.input.length%4!==0){
+                return 'the size of base64 string must time of 4';
+            }
+            return data.input.length/4*3;
+        }
+    }
+
+    updateValueLen(){
+        const inputSize = this.querySelector(`.input_size`);
+        inputSize.textContent = `${this.valueLen}`;
     }
 }
 customElements.define('binary-input', BinaryInput);
@@ -1026,7 +1133,6 @@ customElements.define('task-label', TaskLable);
 var task_info_map = new Map();
 function updateTask(){
     let running = document.getElementById("task_running_lists");
-    let waiting = document.getElementById("task_waiting_lists");
     for(const [k,v] of task_info_map){
         let task_tag = document.querySelector(`task-tag[taskId="${k+""}"]`)
         if(task_tag){
@@ -1034,15 +1140,7 @@ function updateTask(){
             task_tag.updateProgress(v.progress);
             task_tag.updateExcepted(v.expected);
         }
-        else if(v.status===0){
-            task_tag = document.createElement("task-tag");
-            task_tag.setAttribute("taskId",v.taskId);
-            task_tag.setAttribute("status",v.status);
-            task_tag.setAttribute("type",v.params.type);
-            task_tag.params = v.params;
-            waiting.appendChild(task_tag);
-        }
-        else if(v.status===2 || v.status===4){
+        else if(v.status===0 || v.status===2 || v.status===4){
             task_tag = document.createElement("task-tag");
             task_tag.setAttribute("taskId",v.taskId);
             task_tag.setAttribute("status",v.status);
@@ -1050,7 +1148,6 @@ function updateTask(){
             task_tag.params = v.params;
             running.appendChild(task_tag);
         }
-
     }
 }
 function aUpdateTask(){
@@ -1111,7 +1208,11 @@ document.querySelectorAll('sidebar-item').forEach(item => {
             let frame = document.getElementById(item.id.split("-")[0]+"-frame");
             frame.className = "context_frame";
         })
-        event.target.setAttribute("active","");
+        let t = event.target;
+        while(t.tagName.toLowerCase() !== "sidebar-item") {
+            t = t.parentNode;
+        }
+        t.setAttribute("active","");
         let frame = document.getElementById(event.target.id.split("-")[0]+"-frame");
         frame.className = "context_frame_active";
     })
@@ -1201,6 +1302,7 @@ function hash_init(result){
             else if(value.type===3){
                 let input = document.createElement("binary-input");
                 input.setAttribute("id",`hash_param-${key}`);
+                input.setAttribute("random","16");
                 hash_param.appendChild(input);
             }
         }
@@ -1511,6 +1613,7 @@ function init_crypto_mode(list){
                     else if(value.type===3){
                         let input = document.createElement("binary-input");
                         input.setAttribute("id",`en_mode_param-${key}`);
+                        input.setAttribute("random","16");
                         mode_params.appendChild(input);
                     }
                 }
@@ -1565,6 +1668,7 @@ function init_crypto_mode(list){
                     else if(value.type===3){
                         let input = document.createElement("binary-input");
                         input.setAttribute("id",`en_mode_param-${key}`);
+                        input.setAttribute("random","16");
                         mode_params.appendChild(input);
                     }
                 }

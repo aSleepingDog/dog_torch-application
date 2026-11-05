@@ -7,17 +7,14 @@
 </head>
 <body>
     <div id="menu_bar">
-        <div id="menu_bar_top">
-            <sidebar-item icon="resource/ArrowsRightLeft.svg" icon-alt="转换图标" active id="exchange-bar">转换</sidebar-item>
-            <sidebar-item icon="resource/hashTag0.svg" icon-alt="散列图标" id="hash-bar">散列</sidebar-item>
-            <sidebar-item icon="resource/LockClosed.svg" icon-alt="加密图标" id="encrypt-bar">加密</sidebar-item>
-            <sidebar-item icon="resource/LockOpen.svg" icon-alt="解密图标" id="decrypt-bar">解密</sidebar-item>
-            <sidebar-item icon="resource/task.svg" icon-alt="任务图标" id="task-bar">任务</sidebar-item>
-        </div>
-        <div id="menu_bar_bottom">
-            <sidebar-item icon="resource/about.svg" icon-alt="关于图标" id="about-bar">关于</sidebar-item>
-            <sidebar-item icon="resource/setting.svg" icon-alt="设置图标" id="setting-bar">设置</sidebar-item>
-        </div>
+        <sidebar-item icon="resource/ArrowsRightLeft.svg" icon-alt="转换图标" active id="exchange-bar" active>转换</sidebar-item>
+        <sidebar-item icon="resource/hashTag0.svg" icon-alt="散列图标" id="hash-bar">散列</sidebar-item>
+        <sidebar-item icon="resource/LockClosed.svg" icon-alt="加密图标" id="encrypt-bar">加密</sidebar-item>
+        <sidebar-item icon="resource/LockOpen.svg" icon-alt="解密图标" id="decrypt-bar">解密</sidebar-item>
+        <sidebar-item icon="resource/task.svg" icon-alt="任务图标" id="task-bar">任务</sidebar-item>
+        <div style="margin: auto 0"></div>
+        <sidebar-item icon="resource/setting.svg" icon-alt="设置图标" id="setting-bar">设置</sidebar-item>
+        <sidebar-item icon="resource/about.svg" icon-alt="关于图标" id="about-bar">关于</sidebar-item>
     </div>
     <div id="context">
         <div class="context_frame_active" id="exchange-frame">
@@ -156,9 +153,9 @@
             <binary-textarea id="decrypt_output" output file></binary-textarea>
         </div>
         <div class="context_frame" id="task-frame">
-            <div class="task_list" id="task_waiting_lists">
-                <div class="task_title" id="task_waiting_title">等待队列</div>
-            </div>
+<!--            <div class="task_list" id="task_waiting_lists">-->
+<!--                <div class="task_title" id="task_waiting_title">等待队列</div>-->
+<!--            </div>-->
             <div class="task_list" id="task_running_lists">
                 <div class="task_title" id="task_running_title">运行队列</div>
             </div>

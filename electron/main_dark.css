@@ -99,7 +99,6 @@ input[type="number"]{
     outline: none;
     display: flex;
     flex-direction: column;
-    align-items: center;
     background-color: #FFFFFF00;
     overflow: hidden;
     pointer-events: none;
@@ -136,6 +135,7 @@ input[type="number"]{
     margin: 1%;
 }
 #task_details{
+    width: 67%;
     position: relative;
     display: flex;
     flex-direction: column;
@@ -358,6 +358,34 @@ binary-input input[type="text"],
 binary-input input[type="password"]{
     background-color: #303030;
     color: #FFFFFF;
+}
+binary-input .input_extra_operator{
+    display: flex;
+}
+binary-input .input_size_label{
+    font-size: 12px;
+    color: #acacac;
+}
+binary-input .input_size{
+    font-size: 12px;
+    color: #acacac;
+}
+binary-input .input_random_size[type="number"]{
+    font-size: 12px;
+    width: 30px;
+}
+binary-input .input_random_size[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+binary-input .input_random_btn{
+    font-size: 12px;
+    color: #acacac;
+    margin: 0 2px;
+}
+binary-input .input_random_btn:hover{
+    background-color: #9f9cba;
+    color: black;
 }
 
 /* ===== message-box ===== */
