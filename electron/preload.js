@@ -22,4 +22,8 @@ contextBridge.exposeInMainWorld('electron', {
 
   encryptData: (args) => ipcRenderer.invoke("encryptData:run",args),
   decryptData: (args) => ipcRenderer.invoke("decryptData:run",args),
+
+  loadSettingJson: () => ipcRenderer.invoke("loadSettingJson:run"),
+  saveSettingJson: (args) => ipcRenderer.invoke("saveSettingJson:run",args)
+
 })

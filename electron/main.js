@@ -68,17 +68,17 @@ class FileSelect extends HTMLElement {
         const id = this.getAttribute('id');
         const idbar = fmtIdBar(id);
         const inner_str=`
-        <div id="${idbar}file_input_field" class="file_input_field">
+        <div id="${idbar}file_select_field" class="file_select_field">
             <p>请点击选择文件或将文件拖拽至窗口</p>
             <p id="${idbar}file_text">当前文件:</p>
-            <input type="file" id="${idbar}file_input" hidden>
+            <input type="file" id="${idbar}file_select" hidden>
         </div>`;
         if(this.getAttribute("bind-output")!==undefined){
             this.bindOutput = this.getAttribute("bind-output");
         }
         this.innerHTML = inner_str;
 
-        const input = this.querySelector(`#${idbar}file_input`);
+        const input = this.querySelector(`#${idbar}file_select`);
         input.addEventListener("change", (event) => {
             this.file_paths = [];
             const files = event.target.files;
@@ -94,7 +94,7 @@ class FileSelect extends HTMLElement {
                 }
             }
         })
-        const field = this.querySelector(`#${idbar}file_input_field`);
+        const field = this.querySelector(`#${idbar}file_select_field`);
         this.addEventListener("click", (event) => {
             input.dispatchEvent(new MouseEvent('click', {
                 bubbles: true,
@@ -110,22 +110,22 @@ class FileSelect extends HTMLElement {
         });
         this.addEventListener("dragenter", (event) => {
             this.dragCounter++;
-            field.className = "file_input_field_active";
+            field.className = "file_select_field_active";
         })
         this.addEventListener("dragleave", (event) => {
             this.dragCounter--;
             if (this.dragCounter <= 0) {
                 this.dragCounter = 0;
-                field.className = "file_input_field";
+                field.className = "file_select_field";
             }
         })
         this.addEventListener("dragend", (event) => {
             this.dragCounter = 0;
-            field.className = "file_input_field";
+            field.className = "file_select_field";
         })
         this.addEventListener("drop", (event) => {
             this.dragCounter = 0;
-            field.className = "file_input_field";
+            field.className = "file_select_field";
             input.files = event.dataTransfer.files;
             input.dispatchEvent(new Event('change', {}));
         })
@@ -141,12 +141,12 @@ class FileSelect extends HTMLElement {
     get files(){
         const id = this.getAttribute('id');
         const idbar = fmtIdBar(id);
-        return this.querySelector(`#${idbar}file_input`).files;
+        return this.querySelector(`#${idbar}file_select`).files;
     }
     clear(){
         const id = this.getAttribute('id');
         const idbar = fmtIdBar(id);
-        const input = this.querySelector(`#${idbar}file_input`);
+        const input = this.querySelector(`#${idbar}file_select`);
         input.value = '';
         this.file_paths = [];
         let text = this.querySelector(`#${idbar}file_text`);
@@ -159,10 +159,81 @@ class FileSelect extends HTMLElement {
         else{
             this.removeAttribute("hidden");
         }
-        this.querySelector(`.file_input_field`).style = h ? "display:none" : "";
+        this.querySelector(`.file_select_field`).style = h ? "display:none" : "";
     }
 }
-customElements.define('file-input', FileSelect);
+customElements.define('file-select', FileSelect);
+
+class FileInput extends HTMLElement {
+    static get observedAttributes() {
+        return [];
+    }
+    constructor(){
+        super();
+    }
+    connectedCallback() {
+        this.render();
+    }
+    attributeChangedCallback(name, oldValue, newValue) {
+        if(name === "hidden"){
+            this.querySelector("div").hidden = oldValue === null;
+        }
+        if (oldValue !== newValue && this.isConnected) {
+            this.render();
+        }
+    }
+
+    render(){
+        let placeholder = this.getAttribute("placeholder");
+        let accept = this.getAttribute("accept");
+        let id = fmtIdBar(this.getAttribute("id"));
+        let hidden = this.hasAttribute("hidden");
+        let webkitdirectory = this.hasAttribute("webkitdirectory");
+
+        this.innerHTML = `
+<div class="file_input_field" id="${id}file_input_field" ${hidden?"hidden":""}>
+    <input class="file_text_input" id="${id}file_text_input" placeholder="${placeholder}">
+    <input type="file" hidden  accept="${accept}" ${webkitdirectory?"webkitdirectory":""}>
+    <div class="file_input_btn" id="${id}file_input_btn">选择文件</div>
+</div>
+        `
+        let input = this.querySelector("input.file_text_input");
+        let fileInput = this.querySelector(`input[type="file"]`);
+        let btn = this.querySelector(`div.file_input_btn`);
+        fileInput.addEventListener("change",(event)=>{
+            let file_paths = [];
+            const files = event.target.files;
+            for (const file of event.target.files) {
+                file_paths.push(window.electron.getFilePath(file));
+            }
+            let file_path = file_paths[0];
+            let i = file_path.length;
+            while(file_path.charAt(i)!=="\\"){
+                i--;
+            }
+            input.value = file_path.substring(0,i);
+        })
+        btn.addEventListener("click",(e)=>{
+            fileInput.dispatchEvent(new MouseEvent('click', {
+                bubbles: true,
+                cancelable: true,
+                view: window
+            }));
+        })
+
+    }
+
+    get value(){
+        return this.querySelector("input.file_text_input").value;
+    }
+
+    set value(v){
+        let input = this.querySelector("input.file_text_input");
+        input.value = v;
+    }
+
+}
+customElements.define('file-input', FileInput);
 
 class SidebarItem extends HTMLElement {
     constructor() {
@@ -175,10 +246,19 @@ class SidebarItem extends HTMLElement {
 
     connectedCallback() {
         this.render();
-        this.setupEventListeners();
     }
 
     attributeChangedCallback(name, oldValue, newValue) {
+        if(name === "active"){
+            let img = this.querySelector("img");
+            if(oldValue === null){
+                img.className = "sidebar_icon_active";
+            }
+            else if(newValue === null){
+                img.className = "sidebar_icon";
+            }
+            return;
+        }
         if (oldValue !== newValue) {
             this.render();
         }
@@ -199,21 +279,6 @@ class SidebarItem extends HTMLElement {
         <div class="sidebar_title" id="${elementIdbar}title" part="title">${title}</div>
       </div>
     `;
-    }
-
-    setupEventListeners() {
-        const item = this.querySelector(".sidebar_item");
-
-        // 触发自定义点击事件
-        item.addEventListener('click', (e) => {
-            this.dispatchEvent(new CustomEvent('sidebar-click', {
-                bubbles: true,
-                detail: {
-                    id: this.getAttribute('id') || '',
-                    title: this.textContent.trim()
-                }
-            }));
-        });
     }
 
     get name() {
@@ -324,8 +389,8 @@ class BinaryTextarea extends HTMLElement {
                 </div>
                 <div class="input_field">
                     <textarea class="input_text" id="${idbar}input_text" rows="5" ${output ? "readonly" : ""}></textarea>
-           ${file ? (output ? `<input placeholder="输入输出路径" id="${idbar}output_path" type="text" ${this.default_type==="file"?"":"hidden"}>`
-                            : `<file-input id="${idbar}input_file" bind-output="${this.bindOutput}" ${this.default_type==="file"?"":"hidden"}></file-input>`)
+           ${file ? (output ? `<file-input id="${idbar}output_path" placeholder="输出路径" ${this.default_type==="file"?"":"hidden"}></file-input>`
+                            : `<file-select id="${idbar}input_file" bind-output="${this.bindOutput}" ${this.default_type==="file"?"":"hidden"}></file-select>`)
                   : ``}
                 </div>
             </div>
@@ -445,6 +510,9 @@ class BinaryTextarea extends HTMLElement {
                 }
             }
             else if (selectedValue === 4) {
+                if(this.querySelector(`#${idbar}input_file`).file_paths.length===0){
+                    throw Error("请选择一个文件")
+                }
                 data.input = this.querySelector(`#${idbar}input_file`).file_paths[0];
                 this.querySelector(`#${idbar}input_file`).clear()
             }
@@ -546,7 +614,7 @@ class BinaryInput extends HTMLElement {
 
     render() {
         const id = this.getAttribute('id');
-        console.log(id);
+        //console.log(id);
         this.id = id;
         const idbar = fmtIdBar(id);
         const password = this.hasAttribute("password");
@@ -1203,15 +1271,16 @@ function showing(type,msg){
 
 document.querySelectorAll('sidebar-item').forEach(item => {
     item.addEventListener("click",(event)=>{
+        let t = event.target;
+        while(t.tagName.toLowerCase() !== "sidebar-item") {
+            t = t.parentNode;
+            if(t===null) return;
+        }
         document.querySelectorAll('sidebar-item').forEach(item=>{
             item.removeAttribute("active");
             let frame = document.getElementById(item.id.split("-")[0]+"-frame");
             frame.className = "context_frame";
         })
-        let t = event.target;
-        while(t.tagName.toLowerCase() !== "sidebar-item") {
-            t = t.parentNode;
-        }
         t.setAttribute("active","");
         let frame = document.getElementById(event.target.id.split("-")[0]+"-frame");
         frame.className = "context_frame_active";
@@ -1736,6 +1805,43 @@ decrypt_types.forEach((encrypt_type)=>{
         })
     })
 })
+
+function controlAutoPack(){
+    let encryptHeader = document.getElementById("encrypt_with_header");
+    let encryptTypeFile = document.getElementById("encrypt_input-input_type_file");
+    let autoHandle = document.getElementById("auto_handle_field");
+    if(encryptHeader.checked && encryptTypeFile.checked){
+        autoHandle.removeAttribute("style");
+    }
+    else{
+        autoHandle.style.display = "none";
+    }
+}
+document.getElementById("encrypt_with_header").addEventListener("change", event=>{
+    controlAutoPack();
+})
+document.getElementById("encrypt_input-input_type_file").addEventListener("change", event=>{
+    controlAutoPack();
+})
+document.getElementById("auto_handle_platform").addEventListener("change", (event)=>{
+    let name = document.getElementById("auto_handle_name_field");
+    if(event.target.value===""){
+        name.hidden = true;
+    }
+    else{
+        name.hidden = false;
+    }
+})
+function encryptPackage(){
+    let package_ = {};
+    let name = document.getElementById("auto_handle_name").value;
+    let platform = document.getElementById("auto_handle_platform").value;
+    package_.name = name;
+    package_.platform = platform;
+    return package_;
+}
+
+
 document.getElementById("decrypt_with_header").addEventListener("change", event=>{
     let cipher_choose = document.getElementById("decrypt_cipher");
     if(event.target.checked){
@@ -1745,7 +1851,6 @@ document.getElementById("decrypt_with_header").addEventListener("change", event=
         cipher_choose.style.display="block";
     }
 })
-
 
 document.getElementById("encrypt_button").addEventListener("click", (event)=>{
     let args = {};
@@ -1758,11 +1863,13 @@ document.getElementById("encrypt_button").addEventListener("click", (event)=>{
         }
         let key = document.getElementById("encrypt_key").value;
         let encrypt_type = document.querySelector("input[type=\"radio\"][name=\"encrypt_type\"]:checked").value;
+        let package_ = encryptPackage();
         args.input = input;
         args.output = output;
         args.key = key;
         args.type = encrypt_type;
         args.header = header;
+        args.package = package_;
         if(encrypt_type==="block"){
             let alg_name = document.getElementById("encrypt_block_algorithm_name").value;
             let alg_bs = document.getElementById("encrypt_block_algorithm_block_size").value;
@@ -1819,25 +1926,25 @@ document.getElementById("encrypt_button").addEventListener("click", (event)=>{
             args.cipher = {};
             args.cipher.algorithm = alg;
         }
-        console.log(args)
+        //console.log(args)
+        window.electron.encryptData(args).then((data)=>{
+            let output = document.getElementById("encrypt_output");
+            if(data.type==="success"){
+                if(typeof(data.result)==="string"){
+                    output.setText(data.result);
+                    showing("0","操作成功");
+                }
+                else if(typeof(data.result)==="number"){
+                    showing("0",`已添加至任务${data.result}`);}
+            }
+            else if(data.type==="error"){
+                showing("1", data.message);
+            }
+        })
     }
     catch(e){
         showing("1",e.message)
     }
-    window.electron.encryptData(args).then((data)=>{
-        let output = document.getElementById("encrypt_output");
-        if(data.type==="success"){
-            if(typeof(data.result)==="string"){
-                output.setText(data.result);
-                showing("0","操作成功");
-            }
-            else if(typeof(data.result)==="number"){
-                showing("0",`已添加至任务${data.result}`);}
-        }
-        else if(data.type==="error"){
-            showing("1", data.message);
-        }
-    })
 })
 document.getElementById("decrypt_button").addEventListener("click", (event)=>{
     let args = {};
@@ -1911,29 +2018,65 @@ document.getElementById("decrypt_button").addEventListener("click", (event)=>{
             args.cipher = {};
             args.cipher.algorithm = alg;
         }
-        console.log(args)
+        //console.log(args)
+        window.electron.decryptData(args).then((data)=>{
+            let output = document.getElementById("decrypt_output");
+            if(data.type==="success"){
+                if(typeof(data.result)==="string"){
+                    output.setText(data.result);
+                    showing("0","操作成功");
+                }
+                else if(typeof(data.result)==="number"){
+                    showing("0",`已添加至任务${data.result}`);}
+            }
+            else if(data.type==="error"){
+                showing("1", data.message);
+            }
+        })
+
     }
     catch(e){
         showing("1",e.message)
 
     }
-    window.electron.decryptData(args).then((data)=>{
-        let output = document.getElementById("decrypt_output");
-        if(data.type==="success"){
-            if(typeof(data.result)==="string"){
-                output.setText(data.result);
-                showing("0","操作成功");
-            }
-            else if(typeof(data.result)==="number"){
-                showing("0",`已添加至任务${data.result}`);}
-        }
-        else if(data.type==="error"){
-            showing("1", data.message);
-        }
-    })
 })
 
 document.getElementById("setting_theme").addEventListener("change", (event)=>{
     changeTheme();
     initCss();
+})
+
+function updateConfig(config){
+    let log_path = document.getElementById("setting_log_path");
+    log_path.value = config.log;
+    let tmp_path = document.getElementById("setting_tmp_path");
+    tmp_path.value = config.tmp;
+    showing(0,"加载成功")
+}
+window.electron.loadSettingJson().then((config)=>{
+    updateConfig(config);
+})
+document.getElementById("setting_load_button").addEventListener("click",(event)=>{
+    window.electron.loadSettingJson().then((config)=>{
+        updateConfig(config);
+    })
+})
+function selectConfig(){
+    let config = {};
+    config.log = document.getElementById("setting_log_path").value;
+    config.tmp = document.getElementById("setting_tmp_path").value;
+    return config;
+}
+document.getElementById("setting_save_button").addEventListener("click",(event)=>{
+    let args = {}
+    args.config = selectConfig();
+    window.electron.saveSettingJson(args).then((r)=>{
+        if(r){
+            showing(0,"保存成功")
+        }
+        else{
+            showing(1,"保存失败")
+        }
+
+    })
 })

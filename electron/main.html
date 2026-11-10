@@ -87,10 +87,26 @@
                     </div>
                 </div>
                 <div class="crypto_field">
-                    <div class="crypto_field_title">元数据</div>
+                    <div class="crypto_field_title">元数据和分发打包</div>
                     <label title="请不要在流加密中在头部添加加密器的元数据 后续版本可能不兼容当前的头部格式" for="encrypt_with_header">将加密配置写入密文头部</label>
                     <input title="请不要在流加密中在头部添加加密器的元数据 后续版本可能不兼容当前的头部格式" type="checkbox" id="encrypt_with_header">
                     <span>(请不要在流加密中在头部添加加密器的元数据 后续版本可能不兼容当前的头部格式)</span>
+                </div>
+                <div class="crypto_field" id="auto_handle_field" style="display: none;">
+                    <div class="crypto_field_title">自解密包（适合分发）</div>
+                    <div>
+                        <label for="auto_handle_platform">发布平台</label>
+                        <select id="auto_handle_platform">
+                            <option value="">不分发</option>
+                            <option value="win32-win10-x64">win32-win10-x64</option>
+                            <!--<option value="shell-linux-x64">shell-linux-x64</option>-->
+                        </select>
+                    </div>
+                    <div id="auto_handle_name_field" hidden>
+                        <label for="auto_handle_name">发布名称</label>
+                        <input id="auto_handle_name" placeholder="为空则默认是输出文件名" type="text">
+                        <span>保存路径同输出路径</span>
+                    </div>
                 </div>
                 <div class="context_button" id="encrypt_button">加密</div>
             </div>
@@ -177,6 +193,18 @@
             <div>
                 <label for="setting_theme">颜色模式切换</label>
                 <input type="checkbox" id="setting_theme">
+            </div>
+            <div>
+                <div>日志（如果路径不存在则不记录）</div>
+                <file-input id="setting_log_path" placeholder="请选择一个文件夹" webkitdirectory></file-input>
+            </div>
+            <div>
+                <div>临时目录（如果路径不存在则默认./tmp）</div>
+                <file-input id="setting_tmp_path" placeholder="请选择一个文件夹" webkitdirectory></file-input>
+            </div>
+            <div style="display: flex;">
+                <div class="context_button" id="setting_load_button">加载</div>
+                <div class="context_button" id="setting_save_button">保存</div>
             </div>
         </div>
         <div class="context_frame" id="about-frame">
