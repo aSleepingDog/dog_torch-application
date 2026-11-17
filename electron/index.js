@@ -19,91 +19,6 @@ var dog_torch = require(path.join(root_path,"native/dog_torch_napi.node"));
 
 // console.log(dog_torch.crypto.sym.stream.algorithm.all());
 // console.log(dog_torch.crypto.sym.block.algorithm.all());
-
-var config = {
-    log:"",
-    tmp:""
-}
-try{
-    // console.log(path.join(root_path,"config.json"))
-    config = JSON.parse(fs.readFileSync(path.join(root_path,"config.json"),"utf8"));
-}
-catch(e){}
-// console.log(config);
-function todayLocal() {
-    const d = new Date();
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0'); // 月份从0开始
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${y}-${m}-${day}`;
-}
-function nowLocal() {
-    const d = new Date();
-    const p = (n, w = 2) => String(n).padStart(w, '0');
-    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ` +
-        `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}.` +
-        `${p(d.getMilliseconds(), 3)}`;
-}
-function readLog(msg){
-    let log = config.log;
-    fs.access(log,fs.constants.F_OK | fs.constants.W_OK, (err) => {
-        if (!err) {
-            fs.appendFile(path.join(log,`log_${todayLocal()}.log`),`[${nowLocal()}] ${msg}\n`,'utf8',(e)=>{})
-        }
-    });
-}
-
-var afterTaskHandler = new Map();
-var afterTaskResultsLock = false;
-var afterTaskResults = [];
-var taskPool = new dog_torch.async.ThreadPool();
-taskPool.start();
-function createWindow(){
-    const win = new BrowserWindow({
-        width: 1200,
-        height: 750,
-        webPreferences: {
-            preload: path.join(__dirname, 'preload.js'),
-            contextIsolation: true,
-            nodeIntegration: false
-        }
-    });
-
-    win.loadFile("main.html");
-    win.webContents.on('before-input-event', (event, input) => {
-        if (!app.isPackaged && ((input.control && input.shift && input.key.toLowerCase() === 'i') || input.key === 'F12')) {
-            event.preventDefault();
-            win.webContents.toggleDevTools();
-        }
-    });
-}
-Menu.setApplicationMenu(null)
-app.on('window-all-closed', () => {
-    if (process.platform !== 'darwin') app.quit()
-})
-
-app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
-})
-
-app.whenReady().then(() => {
-    createWindow()
-})
-
-async function handleError(error) {
-    return {type: 'error', message: error.message};
-}
-function handleSuccess(result) {
-    return {type: 'success', result: result};
-}
-
-async function saveClipBoard(text){
-    clipboard.writeText(text);
-    return true;
-}
-ipcMain.handle("saveClipBoard:run",async (event, text) => {
-    return await saveClipBoard(text);
-});
 function fmtInput(input){
     let ft = "";
     if(input.type===0){
@@ -148,26 +63,154 @@ function transObject(params){
     return result;
 }
 
-async function exchange(input,output){
+var config = {
+    log:"",
+    tmp:""
+}
+try{
+    // console.log(path.join(root_path,"config.json"))
+    config = JSON.parse(fs.readFileSync(path.join(root_path,"config.json"),"utf8"));
+}
+catch(e){}
+// console.log(config);
+function todayLocal() {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0'); // 月份从0开始
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+}
+function nowLocal() {
+    const d = new Date();
+    const p = (n, w = 2) => String(n).padStart(w, '0');
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ` +
+        `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}.` +
+        `${p(d.getMilliseconds(), 3)}`;
+}
+function writeLog(msg,key){
+    let log = config.log;
+    key = transBinaryData(key);
+    if(key.size()>=16){
+        const charList = "0123456789ABCDEF";
+        let ivStr = "";
+        for(let i = 0; i < 16; i++){
+            let n = Math.floor(Math.random() * charList.length);
+            ivStr += charList[n];
+            n = Math.floor(Math.random() * charList.length);
+            ivStr += charList[n];
+        }
+        let modeParam = {
+            aad: new dog_torch.BinaryData(),
+            iv: new dog_torch.BinaryData(ivStr,2),
+            shift:0,
+            tag_out:0
+        }
+        let alg = dog_torch.crypto.sym.block.algorithm.create(
+            "AES",128,128
+        );
+        let padding = dog_torch.crypto.sym.block.padding.create("NoPadding");
+        let mode = dog_torch.crypto.sym.block.mode.create("GCM",padding,modeParam);
+        let cipher = new dog_torch.crypto.sym.block.Cipher(alg,mode);
+        cipher.setKey(key);
+        cipher.init();
+        msg = new dog_torch.BinaryData(msg,0);
+        let header = cipher.serialize();
+        let crypt = cipher.encrypt(msg);
+        msg = dog_torch.BinaryData.concat(header,crypt).toHexString(true).substring(150);
+    }
+    fs.access(log,fs.constants.F_OK | fs.constants.W_OK, (err) => {
+        if (!err) {
+            fs.appendFile(path.join(log,`log_${todayLocal()}.log`),`[${nowLocal()}] ${msg}\n`,'utf8',(e)=>{})
+        }
+    });
+}
+
+async function allLogFiles() {
+    try{
+        const files = fs.readdirSync(config.log);
+        return files;
+    }
+    catch(e){
+        return [];
+    }
+}
+ipcMain.handle('allLogFiles:run', async (event) => {
+    return await allLogFiles();
+})
+
+var afterTaskHandler = new Map();
+var afterTaskResultsLock = false;
+var afterTaskResults = [];
+var taskPool = new dog_torch.async.ThreadPool();
+taskPool.start();
+var win = null;
+function createWindow(){
+    win = new BrowserWindow({
+        width: 1200,
+        height: 750,
+        webPreferences: {
+            preload: path.join(__dirname, 'preload.js'),
+            contextIsolation: true,
+            nodeIntegration: false
+        }
+    });
+
+    win.loadFile("main.html");
+    win.webContents.on('before-input-event', (event, input) => {
+        if (!app.isPackaged && ((input.control && input.shift && input.key.toLowerCase() === 'i') || input.key === 'F12')) {
+            event.preventDefault();
+            win.webContents.toggleDevTools();
+        }
+    });
+}
+Menu.setApplicationMenu(null)
+app.on('window-all-closed', () => {
+    if (process.platform !== 'darwin') app.quit()
+})
+
+app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) createWindow()
+})
+
+app.whenReady().then(() => {
+    createWindow()
+})
+
+async function handleError(error) {
+    return {type: 'error', message: error.message};
+}
+function handleSuccess(result) {
+    return {type: 'success', result: result};
+}
+
+async function saveClipBoard(text){
+    clipboard.writeText(text);
+    return true;
+}
+ipcMain.handle("saveClipBoard:run",async (event, text) => {
+    return await saveClipBoard(text);
+});
+
+async function exchange(input,output, logKey){
     try{
         let bin = transBinaryData(input);
         let fmter = transParam(output);
         let r = fmter.fmtBinary(bin);
-        readLog(
-            `${fmtInput(input)} --[${fmter.fmtString()}]--> ${r}`
+        writeLog(
+            `${fmtInput(input)} --[${fmter.fmtString()}]--> ${r}`, logKey
         )
         return r;
     }
     catch(err){
-        readLog(
-            `${fmtInput(input)}\n${err.message}`
+        writeLog(
+            `${fmtInput(input)}\n${err.message}`, logKey
         )
         throw err;
     }
     return "";
 }
-ipcMain.handle('exchange:run', async (event, input, output) => {
-    return await exchange(input, output)
+ipcMain.handle('exchange:run', async (event, input, output, logKey) => {
+    return await exchange(input, output, logKey)
 })
 
 async function allTaskInfo(){
@@ -175,11 +218,11 @@ async function allTaskInfo(){
     // console.log(t);
     return t;
 }
-ipcMain.handle('allTaskInfo:run', async (event) => {
+ipcMain.handle('allTaskInfo:run', async (event,logKey) => {
     return await allTaskInfo();
 })
 var resultLock = false;
-async function allTaskResult(){
+async function allTaskResult(logKey){
     if(resultLock){
         return [];
     }
@@ -195,14 +238,16 @@ async function allTaskResult(){
         if(afterTaskHandler.has(task.taskId)){
             if(task.result==="success"){
                 let handle = afterTaskHandler.get(task.taskId);
-                await handle.func(task.taskId,handle.args);
+                Promise.resolve()
+                    .then(()=>handle.func(task.taskId,handle.args))
+                    .catch(err=>{})
             }
             afterTaskHandler.delete(task.taskId);
         }
         else{
             results.push(task);
-            readLog(
-                `${task.taskId} : ${task.result}`
+            writeLog(
+                `${task.taskId} : ${task.result}`, logKey
             )
         }
     }
@@ -253,7 +298,7 @@ async function allHash(){
 ipcMain.handle('allHash:run', async (event) => {
     return await allHash();
 })
-async function hashData(input,hash,output){
+async function hashData(input,hash,output,logKey){
     let name = hash.name;
     let region = hash.region;
     let params = transObject(hash.params);
@@ -264,22 +309,22 @@ async function hashData(input,hash,output){
         let binput = transBinaryData(input);
         let result = gen.calcuateBinary(binput);
         result = fmter.fmtBinary(result);
-        readLog(
-            `${fmtInput(input)} --[${gen.fmtString()}]--> ${result}:${fmter.fmtString()}`
+        writeLog(
+            `${fmtInput(input)} --[${gen.fmtString()}]--> ${result}:${fmter.fmtString()}`, logKey
         )
         return handleSuccess(result);
     }
     else{
         let id = taskPool.addHashTask(gen, input.input, fmter);
-        readLog(
-            `${input.input} --[${gen.fmtString()}]--> ${fmter.fmtString()} [${id}]`
+        writeLog(
+            `${input.input} --[${gen.fmtString()}]--> ${fmter.fmtString()} [${id}]`, logKey
         );
         return handleSuccess(id);
     }
 }
-ipcMain.handle('hashData:run', async (event,input,hash,output) => {
+ipcMain.handle('hashData:run', async (event,input,hash,output,logKey) => {
     try{
-        return await hashData(input,hash,output);
+        return await hashData(input,hash,output,logKey);
     }
     catch(e){
         return await handleError(e);
@@ -360,7 +405,7 @@ ipcMain.handle('allBlockPadding:run', async (event) => {
     return await allBlockPadding();
 })
 
-function packageEncryptFile(id,args){
+function packageEncryptFile(id,args,logKey){
     let name_ = args.name;
     name_ = name_.replaceAll(".","_");
     let target = path.join(args.path, `${name_}.exe`);
@@ -399,15 +444,15 @@ function packageEncryptFile(id,args){
     finally {
         fs.closeSync(fd);
     }
-    readLog(
-        `${id} : ${msg}`
+    writeLog(
+        `${id} : ${msg}`, logKey
     )
     while(afterTaskResultsLock){}
     afterTaskResultsLock = true;
     afterTaskResults.push({taskId:id,result:msg});
     afterTaskResultsLock = false;
 }
-async function encryptData(input,key,header,type,cipher,output,package_){
+async function encryptData(input,key,header,type,cipher,output,package_,logKey){
     input_ = input;
     key_ = key;
     key = transBinaryData(key);
@@ -437,16 +482,18 @@ async function encryptData(input,key,header,type,cipher,output,package_){
         }
         output = transParam(output);
         crypt = output.fmtBinary(crypt)
-        readLog(
-            `${fmtInput(input_)} --${header_?"[header]":""}[${fmtInput(key_)}][${cipher.fmtString()}:encrypt]--> ${crypt}:${output.fmtString()}`
+        writeLog(
+            `${fmtInput(input_)} --${header_?"[header]":""}[${fmtInput(key_)}][${cipher.fmtString()}:encrypt]--> ${crypt}:${output.fmtString()}`,
+            logKey
         );
         return handleSuccess(crypt);
     }
     else if(input.type===4){
         resultLock = true;
         let id = taskPool.addEncryptTask(cipher,header,input.input,output.path);
-        readLog(
-            `${input.input} --${header?"[header]":""}[${fmtInput(key_)}][${cipher.fmtString()}:encrypt]--> ${output.path} [${id}]`
+        writeLog(
+            `${input.input} --${header?"[header]":""}[${fmtInput(key_)}][${cipher.fmtString()}:encrypt]--> ${output.path} [${id}]`,
+            logKey
         );
         if(package_.platform!==""){
             //修饰name
@@ -476,15 +523,15 @@ async function encryptData(input,key,header,type,cipher,output,package_){
         return handleSuccess(id);
     }
 }
-ipcMain.handle("encryptData:run", async (event,args) => {
+ipcMain.handle("encryptData:run", async (event,args,logKey) => {
     try{
-        return await encryptData(args.input,args.key,args.header,args.type,args.cipher,args.output,args.package);
+        return await encryptData(args.input,args.key,args.header,args.type,args.cipher,args.output,args.package,logKey);
     }
     catch(e){
         return await handleError(e);
     }
 })
-async function decryptData(input,key,header,type,cipher,output){
+async function decryptData(input,key,header,type,cipher,output,logKey){
     key_ = key;
     input_ = input;
     header_ = header;
@@ -511,14 +558,16 @@ async function decryptData(input,key,header,type,cipher,output){
             let plain = cipher.decrypt(input);
             output = transParam(output);
             plain = output.fmtBinary(plain);
-            readLog(
-                `${fmtInput(input_)} --[${fmtInput(key_)}][${cipher.fmtString()}:decrypt]--> ${plain}:${output.fmtString()}`
+            writeLog(
+                `${fmtInput(input_)} --[${fmtInput(key_)}][${cipher.fmtString()}:decrypt]--> ${plain}:${output.fmtString()}`,
+                logKey
             )
             return handleSuccess(plain);
         }else if(input.type===4){
             let id = taskPool.addDecryptTask(cipher,input.input,output.path);
-            readLog(
-                `${fmtInput(input_)} --[${fmtInput(key_)}][${cipher.fmtString()}:decrypt]--> ${output.fmtString()} [${id}]`
+            writeLog(
+                `${fmtInput(input_)} --[${fmtInput(key_)}][${cipher.fmtString()}:decrypt]--> ${output.fmtString()} [${id}]`,
+                logKey
             )
             return handleSuccess(id);
         }
@@ -543,23 +592,24 @@ async function decryptData(input,key,header,type,cipher,output){
             let plain = cipher_set.cipher.decrypt(input,cipher_set.length)
             output = transParam(output);
             plain = output.fmtBinary(plain);
-            readLog(
-                `${fmtInput(input_)} --[${fmtInput(key_)}][${cipher_set.cipher.fmtString()}:decrypt]--> ${plain}:${output.fmtString()}`
+            writeLog(
+                `${fmtInput(input_)} --[${fmtInput(key_)}][${cipher_set.cipher.fmtString()}:decrypt]--> ${plain}:${output.fmtString()}`,
+                logKey
             )
             return handleSuccess(plain);
         }
         else{
             let id = taskPool.addDecryptTask(key,input.input,output.path);
-            readLog(
-                `${input.input} --[auto:decrypt]--> ${output.path} [${id}]`
+            writeLog(
+                `${input.input} --[auto:decrypt]--> ${output.path} [${id}]`, logKey
             )
             return handleSuccess(id);
         }
     }
 }
-ipcMain.handle("decryptData:run", async (event,args) => {
+ipcMain.handle("decryptData:run", async (event,args,logKey) => {
     try{
-        return await decryptData(args.input,args.key,args.header,args.type,args.cipher,args.output);
+        return await decryptData(args.input,args.key,args.header,args.type,args.cipher,args.output,logKey);
     }
     catch(e){
         return await handleError(e);
@@ -584,4 +634,70 @@ async function saveSettingJson(newConfig){
 ipcMain.handle("saveSettingJson:run", async (event,args) => {
     return await saveSettingJson(args.config);
 })
+function isHexStr(str) {
+    const charList = "0123456789ABCDEFabcdef";
+    for (let i = 0; i < str.length; i++) {
+        if (!charList.includes(str[i])) {
+            return false;
+        }
+    }
+    return true;
+}
+function parseLog(text) {
+    const re = /^\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3})\]\s?/;
+    const lines = text.split(/\r?\n/);
+    const result = [];
 
+    for (const line of lines) {
+        const m = line.match(re);
+        if (m) {
+            result.push({ time: m[1], msg: line.slice(m[0].length) });
+        } else if (result.length > 0) {
+            result[result.length - 1].msg += '\n' + line;
+        }
+    }
+
+    for (const item of result) {
+        item.msg = item.msg.trimEnd();
+    }
+
+    return result;
+}
+async function loadLogFile(logPath,logKey){
+    let fileString = "";
+    try{
+        fileString = fs.readFileSync(path.join(config.log, logPath), 'utf8')
+    }
+    catch(err){
+        return [];
+    }
+    let lines = parseLog(fileString);
+    let result = [];
+    let header = new dog_torch.BinaryData("D801A005426C6F636BC002C003A00341455340804080C003A00347434DA0094E6F50616464696E67D804A00573686966744000A0077461675F6F75744010A0036161648000A00269768010",2);
+    logKey = transBinaryData(logKey);
+    for(let line of lines){
+        if(isHexStr(line.msg)){
+            line.msg = new dog_torch.BinaryData(line.msg,2);
+            line.msg = dog_torch.BinaryData.concat(header, line.msg);
+            let cipher_set = null;
+            try{
+                cipher_set = dog_torch.crypto.sym.block.parse(line.msg);
+                cipher_set.cipher.setKey(logKey);
+                cipher_set.cipher.init();
+                let plain = cipher_set.cipher.decrypt(line.msg,cipher_set.length)
+                line.msg = plain.toString();
+            }
+            catch(err){
+                line.msg = "invalid data 无效的数据";
+            }
+        }
+        line.msg = line.msg.replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;");
+        result.push(`[${line.time}] ${line.msg}`);
+    }
+    return result;
+}
+ipcMain.handle("loadLogFile:run", async (event,path,logKey) => {
+    return await loadLogFile(path,logKey);
+})

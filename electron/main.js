@@ -1,4 +1,5 @@
 var extend = ".other"
+var asking_cycle = 500;
 
 function setLight(){
     document.documentElement.setAttribute("theme","light");
@@ -619,6 +620,7 @@ class BinaryInput extends HTMLElement {
         const idbar = fmtIdBar(id);
         const password = this.hasAttribute("password");
         const random = this.hasAttribute("random");
+        const placeholder = this.hasAttribute("placeholder") ? this.getAttribute("placeholder") : "";
         let randomSize = 0;
         try{
             randomSize = parseInt(this.getAttribute("random"));
@@ -646,7 +648,7 @@ class BinaryInput extends HTMLElement {
                     </div>
                 </div>
                 <div class="input_field">
-                    <input type=${password?"password":"text"} class="input_text" type="text" id="${idbar}input_text" rows="5">
+                    <input placeholder="${placeholder}" type=${password?"password":"text"} class="input_text" type="text" id="${idbar}input_text" rows="5">
                 </div>
                 <div class="input_extra_operator">
                     ${!random?"":`
@@ -901,48 +903,7 @@ class TaskTag extends HTMLElement {
     constructor() {
         super();
         this.addEventListener("click", (e) => {
-            document.querySelectorAll("task-tag").forEach(elem=>{
-                elem.choose(false);
-            });
-            this.choose(true);
-
-            let taskTimePoint = document.getElementById("task_time_point");
-            taskTimePoint.setLabel("提交时间");
-            taskTimePoint.setValue(this.params.timePoint);
-
-            let taskType = document.getElementById("task_type");
-            let type_text = "";
-            if(this.params.type === 0) {
-                type_text = "文件数据散列"
-            }
-            else if(this.params.type === 1) {
-                type_text = "文本数据加密"
-            }
-            else if(this.params.type === 2) {
-                type_text = "文本数据解密"
-            }
-            taskType.setLabel("任务类型")
-            taskType.setValue(type_text);
-
-            let taskInput = document.getElementById("task_input");
-            taskInput.setLabel("任务输入")
-            taskInput.setValue(this.params.input);
-
-            let taskOper = document.getElementById("task_operator");
-            taskOper.setLabel("任务操作")
-            taskOper.setValue(this.params.operator);
-
-            let taskOutput = document.getElementById("task_output");
-            taskOutput.setLabel("任务输出");
-            taskOutput.setValue(this.params.output);
-
-            if(task_result_map.has(this.taskId)){
-                let taskResult = document.getElementById("task_result");
-                taskResult.setLabel("任务结果")
-                taskResult.setValue(task_result_map.get(this.taskId).result);
-            }
-            let taskBack = document.getElementById("task_back");
-            taskBack.style.display = "none";
+            this.showing();
         });
         this.addEventListener("dblclick", (e) => {
             let area = this.querySelector(".task_area_active");
@@ -980,6 +941,7 @@ class TaskTag extends HTMLElement {
         let status = this.getAttribute("status");
         this.status = status;
         let status_text = "";
+        let checked = this.hasAttribute("checked");
         {
             if (status === "0") {
                 status_text = "等待";
@@ -992,7 +954,7 @@ class TaskTag extends HTMLElement {
             }
         }
         let inner_str= `
-        <div class="task_area">
+        <div class=${checked?"task_area_active":"task_area"}>
             <div class="task_line">${type_text}</div>
             <div class="task_status task_line">${status_text}</div>
             ${status === "0" || status === "4" ? "" : `
@@ -1111,15 +1073,66 @@ class TaskTag extends HTMLElement {
 
     choose(should){
         if(should){
+            this.setAttribute("checked","");
             let area = this.querySelector(".task_area");
             if(area===null) return;
             area.className = "task_area_active";
         }
         else{
+            this.removeAttribute("checked");
             let area = this.querySelector(".task_area_active");
             if(area===null) return;
             area.className = "task_area";
         }
+    }
+
+    showing(){
+        document.querySelectorAll("task-tag").forEach(elem=>{
+            elem.choose(false);
+        });
+        this.choose(true);
+
+        let taskTimePoint = document.getElementById("task_time_point");
+        taskTimePoint.setLabel("提交时间");
+        taskTimePoint.setValue(this.params.timePoint);
+
+        let taskType = document.getElementById("task_type");
+        let type_text = "";
+        if(this.params.type === 0) {
+            type_text = "文件数据散列"
+        }
+        else if(this.params.type === 1) {
+            type_text = "文本数据加密"
+        }
+        else if(this.params.type === 2) {
+            type_text = "文本数据解密"
+        }
+        taskType.setLabel("任务类型")
+        taskType.setValue(type_text);
+
+        let taskInput = document.getElementById("task_input");
+        taskInput.setLabel("任务输入")
+        taskInput.setValue(this.params.input);
+
+        let taskOper = document.getElementById("task_operator");
+        taskOper.setLabel("任务操作")
+        taskOper.setValue(this.params.operator);
+
+        let taskOutput = document.getElementById("task_output");
+        taskOutput.setLabel("任务输出");
+        taskOutput.setValue(this.params.output);
+
+        let taskResult = document.getElementById("task_result");
+        if(this.result.result!==null && this.result.result!==undefined){
+            taskResult.setLabel("任务结果")
+            taskResult.setValue(this.result.result);
+        }
+        else{
+            taskResult.setLabel("")
+            taskResult.setValue("");
+        }
+        let taskBack = document.getElementById("task_back");
+        taskBack.style.display = "none";
     }
 
     get status(){
@@ -1198,6 +1211,122 @@ class TaskLable extends HTMLElement{
 }
 customElements.define('task-label', TaskLable);
 
+class CodeArea extends HTMLElement {
+    static get observedAttributes() {
+        return [];
+    }
+    constructor(){
+        super();
+    }
+    connectedCallback() {
+        this.render();
+    }
+    attributeChangedCallback(name, oldValue, newValue) {
+        if (oldValue !== newValue && this.isConnected) {
+            this.render();
+        }
+    }
+    render(){
+        let opinions = this.getElementsByTagName("code-opinion");
+        let list = [];
+        for(let opinion of opinions){
+            list.push({
+                language:opinion.getAttribute("language"),
+                html:opinion.innerHTML
+            })
+        }
+        if(opinions.length === 0){
+            return;
+        }
+        const id = fmtIdBar(this.getAttribute('id'));
+        this.innerHTML = `
+        <div ${id===""?"":`id="${id}coding_area"`} class="coding_area">
+            <div ${id===""?"":`id="${id}coding_config"`} class="coding_config">
+                <select ${id===""?"":`id="${id}coding_choice"`} class="coding_choice"></select>
+                <div ${id===""?"":`id="${id}coding_button_show"`} class="coding_button" data-operation="show" flag="0">展开</div>
+                <div ${id===""?"":`id="${id}coding_button_copy"`} class="coding_button" data-operation="copy">复制</div>
+            </div>
+            <div ${id===""?"":`id="${id}coding_text_area"`} class="coding_text_area"></div>
+        </div>`
+        let selectArea = this.querySelector("select.coding_choice");
+        let area = this.querySelector(".coding_text_area");
+        for(let i=0;i<list.length;i++){
+            let opinion = document.createElement("option");
+            opinion.className = "coding_opinion";
+            opinion.textContent = list[i].language;
+            if(id!==""){
+                opinion.id = `${id}coding_opinion-{opinion.dataset.language}`;
+            }
+            selectArea.appendChild(opinion);
+            let coding = document.createElement("div");
+            coding.className = "coding_text_hidden";
+            coding.dataset.language = list[i].language;
+            coding.innerHTML = list[i].html;
+            coding.addEventListener("dblclick",(e)=>{
+                let tar = e.target;
+                console.log(tar.innerText);
+            })
+            area.appendChild(coding);
+        }
+        let first = this.querySelector(".coding_text_hidden");
+        if (first) {
+            first.className = "coding_text";
+        }
+        selectArea.addEventListener("change", (e) => {
+            let language = e.target.value;
+            let root = e.target.parentNode.parentNode.parentNode;
+            let texts = root.getElementsByClassName("coding_text");
+            for(let i = 0; i < texts.length; i++){
+                texts[i].className = "coding_text_hidden";
+            }
+            let targetText = root.querySelector(`.coding_text_hidden[data-language="${language}"]`);
+            targetText.className = "coding_text";
+        })
+        this.querySelector(`div.coding_button[data-operation="show"]`).addEventListener("click", (e)=>{
+            let pres = this.querySelectorAll('pre');
+            if(e.target.getAttribute('flag')==="0"){
+                e.target.textContent = "收起";
+                e.target.setAttribute("flag","1");
+                for(let i = 0; i < pres.length; i++){
+                    pres[i].style.maxHeight = "none";
+                }
+            }
+            else if(e.target.getAttribute('flag')==="1"){
+                e.target.textContent = "展开";
+                e.target.setAttribute("flag","0");
+                for(let i = 0; i < pres.length; i++){
+                    pres[i].style.maxHeight = "40vh";
+                }
+            }
+        })
+        this.querySelector(`div.coding_button[data-operation="copy"]`).addEventListener("click", (e)=>{
+            let target = e.target;
+            window.electron.saveClipBoard(this.querySelector("div.coding_text pre").innerText).then(()=>{
+                    target.textContent = "已复制";
+                    setTimeout(()=>{target.textContent = "复制";},500)
+                })
+                .catch((err)=>{
+                    target.textContent = "错误";
+                })
+        })
+    }
+}
+customElements.define('code-area', CodeArea);
+
+function getLogKey(force){
+    key = document.getElementById("log_key").value;
+    if(document.getElementById("log_key").valueLen<16 && force===true){
+        let ok = confirm("日志密钥小于16B 若确认继续则明文保存日志");
+        if(ok){
+            return key;
+        }
+        else{
+            return false;
+        }
+    }
+    return key;
+}
+
 var task_info_map = new Map();
 function updateTask(){
     let running = document.getElementById("task_running_lists");
@@ -1234,11 +1363,15 @@ function updateResult(){
         let task_tag = document.querySelector(`task-tag[taskId="${k+""}"]`);
         if(task_tag){
             task_tag.result = v;
+            task_result_map.delete(k);
+            if(task_tag.querySelector(".task_area_active")!==null){
+                task_tag.showing();
+            }
         }
     }
 }
 function aUpdateResult(){
-    window.electron.allTaskResult().then(list=>{
+    window.electron.allTaskResult(getLogKey(false)).then(list=>{
         list.forEach(info=>{
             if(info.taskId!==undefined){
                 task_result_map.set(info.taskId,info);
@@ -1250,7 +1383,7 @@ function aUpdateResult(){
 setInterval(() => {
     aUpdateTask();
     aUpdateResult();
-}, 500);
+}, asking_cycle);
 
 function showing(type,msg){
     let msgDialog = document.getElementById("msg_dialog");
@@ -1302,14 +1435,17 @@ document.getElementById("exchange_button").addEventListener('click', (event)=>{
     if(input_data.input===""){
         showing(2,"输入为空");
     }
-    window.electron.exchange(input_data, output_data)
-        .then(data=>{
-            output.setText(data);
-            showing(0,"操作成功");
-        })
-        .catch(error=>{
-            showing(1,error.message);
-        })
+    let logKey = getLogKey(true);
+    if(logKey!==false){
+        window.electron.exchange(input_data, output_data, logKey)
+            .then(data => {
+                output.setText(data);
+                showing(0, "操作成功");
+            })
+            .catch(error => {
+                showing(1, error.message);
+            })
+    }
 })
 
 var hash_list;
@@ -1418,19 +1554,21 @@ document.getElementById("hash_button").addEventListener('click', (event)=>{
         if(output.value.type===0){
             showing(2,"output with UTF8 string after hash may be mojibake or unreadable string")
         }
-        window.electron.hashData(input.value,hash,output.value).then(data=>{
-            if(data.type==="success"){
-                if(typeof(data.result)==="string"){
-                    output.setText(data.result);
-                    showing("0","操作成功");
+        let logKey = getLogKey(true);
+        if(logKey!==false) {
+            window.electron.hashData(input.value, hash, output.value, logKey).then(data => {
+                if (data.type === "success") {
+                    if (typeof (data.result) === "string") {
+                        output.setText(data.result);
+                        showing("0", "操作成功");
+                    } else if (typeof (data.result) === "number") {
+                        showing("0", `已添加至任务${data.result}`);
+                    }
+                } else if (data.type === "error") {
+                    showing("1", data.message);
                 }
-                else if(typeof(data.result)==="number"){
-                    showing("0",`已添加至任务${data.result}`);}
-            }
-            else if(data.type==="error"){
-                showing("1", data.message);
-            }
-        })
+            })
+        }
     }
     catch(error){
         showing(1,error.message);
@@ -1841,7 +1979,6 @@ function encryptPackage(){
     return package_;
 }
 
-
 document.getElementById("decrypt_with_header").addEventListener("change", event=>{
     let cipher_choose = document.getElementById("decrypt_cipher");
     if(event.target.checked){
@@ -1927,20 +2064,22 @@ document.getElementById("encrypt_button").addEventListener("click", (event)=>{
             args.cipher.algorithm = alg;
         }
         //console.log(args)
-        window.electron.encryptData(args).then((data)=>{
-            let output = document.getElementById("encrypt_output");
-            if(data.type==="success"){
-                if(typeof(data.result)==="string"){
-                    output.setText(data.result);
-                    showing("0","操作成功");
+        let logKey = getLogKey(true);
+        if(logKey!==false) {
+            window.electron.encryptData(args, logKey).then((data) => {
+                let output = document.getElementById("encrypt_output");
+                if (data.type === "success") {
+                    if (typeof (data.result) === "string") {
+                        output.setText(data.result);
+                        showing("0", "操作成功");
+                    } else if (typeof (data.result) === "number") {
+                        showing("0", `已添加至任务${data.result}`);
+                    }
+                } else if (data.type === "error") {
+                    showing("1", data.message);
                 }
-                else if(typeof(data.result)==="number"){
-                    showing("0",`已添加至任务${data.result}`);}
-            }
-            else if(data.type==="error"){
-                showing("1", data.message);
-            }
-        })
+            })
+        }
     }
     catch(e){
         showing("1",e.message)
@@ -2019,21 +2158,23 @@ document.getElementById("decrypt_button").addEventListener("click", (event)=>{
             args.cipher.algorithm = alg;
         }
         //console.log(args)
-        window.electron.decryptData(args).then((data)=>{
-            let output = document.getElementById("decrypt_output");
-            if(data.type==="success"){
-                if(typeof(data.result)==="string"){
-                    output.setText(data.result);
-                    showing("0","操作成功");
+        let logKey = getLogKey(true);
+        if(logKey!==false) {
+            window.electron.decryptData(args,logKey).then((data)=>{
+                let output = document.getElementById("decrypt_output");
+                if(data.type==="success"){
+                    if(typeof(data.result)==="string"){
+                        output.setText(data.result);
+                        showing("0","操作成功");
+                    }
+                    else if(typeof(data.result)==="number"){
+                        showing("0",`已添加至任务${data.result}`);}
                 }
-                else if(typeof(data.result)==="number"){
-                    showing("0",`已添加至任务${data.result}`);}
-            }
-            else if(data.type==="error"){
-                showing("1", data.message);
-            }
-        })
-
+                else if(data.type==="error"){
+                    showing("1", data.message);
+                }
+            })
+        }
     }
     catch(e){
         showing("1",e.message)
@@ -2072,11 +2213,70 @@ document.getElementById("setting_save_button").addEventListener("click",(event)=
     args.config = selectConfig();
     window.electron.saveSettingJson(args).then((r)=>{
         if(r){
-            showing(0,"保存成功")
+            showing(0,"保存成功");
+            window.electron.loadSettingJson().then((config)=>{
+                updateConfig(config);
+            })
         }
         else{
             showing(1,"保存失败")
         }
 
     })
+})
+
+function updateLogFile(){
+    let logArea = document.getElementById("log_context");
+    window.electron.allLogFiles().then((list)=>{
+        for(let file of list){
+            let opt = document.createElement("code-opinion");
+            opt.setAttribute("language",file);
+            logArea.appendChild(opt);
+        }
+        logArea.render();
+    })
+}
+updateLogFile();
+function updateLogContext(path,logKey){
+    window.electron.loadLogFile(path,logKey).then((results)=>{
+        let logContext = document.querySelector("code-area#log_context").querySelector(`div[data-language="${path}"]`);
+        let code = logContext.querySelector("code");
+        if(code===null){
+            let pre = document.createElement("pre");
+            let code_in = document.createElement("code");
+            pre.appendChild(code_in);
+            logContext.appendChild(pre);
+            code = code_in;
+        }
+        let text = ""
+        for(let i=0;i<results.length;i++){
+            text += `<span>${results[i]}</span>\n`
+        }
+        code.innerHTML = text;
+        showing(0,"加载日志成功")
+    })
+        .catch(err=>{
+            showing(1,`${err}`)
+        })
+}
+document.querySelector("code-area#log_context").addEventListener("change",(event)=>{
+    let tar = event.target;
+    if(tar.tagName.toLowerCase()!=="select"){
+        return;
+    }
+    updateLogContext(tar.value,getLogKey(false))
+})
+function initLogContext(){
+    let path =
+        document.querySelector("code-area#log_context")
+        .querySelector(".coding_area")
+        .querySelector("select").value
+    updateLogContext(path,getLogKey(false))
+}
+document.addEventListener("DOMContentLoaded", () => {
+    initLogContext();
+});
+document.getElementById("setting_load_log").addEventListener("click",(event)=>{
+    updateLogFile();
+    initLogContext();
 })
