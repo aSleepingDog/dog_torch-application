@@ -147,6 +147,33 @@ body{
     background: #FFFFFF;
 }
 
+/* ===== context_menu ===== */
+#context_menu{
+    display: none;
+    /*display: flex;*/
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+
+    position: absolute;
+    height: 150px;
+    border-radius: 10px;
+    border: #66CCFF solid 1px;
+    padding: 5px;
+    width: 50px;
+    background-color: #FDFDFD;
+    z-index: 1;
+}
+.context_menu_option{
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    color: #000000;
+}
+.context_menu_option:hover{
+    background-color: #d1c0c0;
+}
+
 /* ===== file-input ===== */
 file-input .file_input_field{
     display: flex;

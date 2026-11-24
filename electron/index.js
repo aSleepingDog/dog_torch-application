@@ -190,6 +190,12 @@ async function saveClipBoard(text){
 ipcMain.handle("saveClipBoard:run",async (event, text) => {
     return await saveClipBoard(text);
 });
+async function readClipBoard(){
+    return clipboard.readText();
+}
+ipcMain.handle("readClipBoard:run",async (event) => {
+    return await readClipBoard();
+});
 
 async function exchange(input,output, logKey){
     try{
@@ -253,8 +259,8 @@ async function allTaskResult(logKey){
     }
     return results;
 }
-ipcMain.handle('allTaskResult:run', async (event) => {
-    return await allTaskResult();
+ipcMain.handle('allTaskResult:run', async (event,logKey) => {
+    return await allTaskResult(logKey);
 })
 async function pause(taskId){
     return taskPool.pause(taskId);

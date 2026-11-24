@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld('electron', {
   allLogFiles: () => ipcRenderer.invoke('allLogFiles:run'),
   loadLogFile: (path,logKey) => ipcRenderer.invoke('loadLogFile:run',path,logKey),
   saveClipBoard: (text) => ipcRenderer.invoke("saveClipBoard:run",text),
+  readClipBoard: () => ipcRenderer.invoke("readClipBoard:run"),
 
   exchange: (input, output, logKey) => ipcRenderer.invoke('exchange:run', input, output, logKey),
 

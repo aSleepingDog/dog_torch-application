@@ -169,6 +169,33 @@ input[type="number"]{
     background-color: #191919;
 }
 
+/* ===== context_menu ===== */
+#context_menu{
+    display: none;
+    /*display: flex;*/
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+
+    position: absolute;
+    height: 150px;
+    border-radius: 10px;
+    border: #62706b solid 1px;
+    padding: 5px;
+    width: 50px;
+    background-color: #191919;
+    z-index: 1;
+}
+.context_menu_option{
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    color: #FFFFFF;
+}
+.context_menu_option:hover{
+    background-color: #363636;
+}
+
 /* ===== file-input ===== */
 file-input .file_input_field{
     display: flex;

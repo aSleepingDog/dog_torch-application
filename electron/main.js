@@ -334,6 +334,9 @@ class BinaryTextarea extends HTMLElement {
                 showing("0","已复制")
             })
         });
+        textarea.addEventListener("contextmenu",event=>{
+            showContextMenu(event)
+        })
     }
     attributeChangedCallback(name, oldValue, newValue) {
         if (oldValue !== newValue) {
@@ -695,7 +698,9 @@ class BinaryInput extends HTMLElement {
         inputText.addEventListener("input", (event) => {
             this.updateValueLen();
         });
-
+        inputText.addEventListener("contextmenu", (event) => {
+            showContextMenu(event);
+        })
         if(random){
             const inputRandomBtn = this.querySelector(`.input_random_btn`);
             inputRandomBtn.addEventListener("click", (event) => {
@@ -957,7 +962,7 @@ class TaskTag extends HTMLElement {
         <div class=${checked?"task_area_active":"task_area"}>
             <div class="task_line">${type_text}</div>
             <div class="task_status task_line">${status_text}</div>
-            ${status === "0" || status === "4" ? "" : `
+            ${status === "0" || status === "255" || status === "254"? "" : `
             <div class="task_progress_field task_line">
                 <div class="task_progress"></div>
                 <div class="task_progress_text">0%</div>
@@ -969,7 +974,7 @@ class TaskTag extends HTMLElement {
                 ${status === "2" ? `<div class="task_pause task_operator">暂停</div>` : ""}
                 ${status === "3" ? `<div class="task_resume task_operator">恢复</div>` : ""}
                 ${status === "3" || status === "2" ? `<div class="task_stop task_operator">停止</div>` : ""}
-                ${status === "4" ? `<div class="task_delete task_operator">移除</div>` : ""}
+                ${status === "255" ? `<div class="task_delete task_operator">移除</div>` : ""}
             </div>
         </div>`;
         this.innerHTML = inner_str;
@@ -1025,7 +1030,7 @@ class TaskTag extends HTMLElement {
                 })
             }
         }
-        else if (this.status === "4") {
+        else if (this.status === "255") {
             let delete_ = this.querySelector(".task_delete");
             if(delete_){
                 delete_.addEventListener("click", (event)=>{
@@ -1337,7 +1342,7 @@ function updateTask(){
             task_tag.updateProgress(v.progress);
             task_tag.updateExcepted(v.expected);
         }
-        else if(v.status===0 || v.status===2 || v.status===4){
+        else if(v.status===0 || v.status===2 || v.status===255 || v.status===254){
             task_tag = document.createElement("task-tag");
             task_tag.setAttribute("taskId",v.taskId);
             task_tag.setAttribute("status",v.status);
@@ -2269,14 +2274,132 @@ document.querySelector("code-area#log_context").addEventListener("change",(event
 function initLogContext(){
     let path =
         document.querySelector("code-area#log_context")
-        .querySelector(".coding_area")
-        .querySelector("select").value
+        .querySelector(".coding_area");
+    if(path===null){
+        return
+    }
+    path = path.querySelector("select").value
     updateLogContext(path,getLogKey(false))
 }
-document.addEventListener("DOMContentLoaded", () => {
-    initLogContext();
-});
 document.getElementById("setting_load_log").addEventListener("click",(event)=>{
     updateLogFile();
     initLogContext();
 })
+document.addEventListener("DOMContentLoaded", () => {
+    initLogContext();
+    document.querySelector("body").addEventListener("click",(event)=>{
+        contextMenu.style.display="none";
+    })
+    document.querySelectorAll(`input[type="text"]`).forEach((item)=>{
+        item.addEventListener("contextmenu",(e)=>{
+            showContextMenu(e)
+        });
+    })
+    document.querySelectorAll(`textarea`).forEach((item)=>{
+        item.addEventListener("contextmenu",(e)=>{
+            showContextMenu(e)
+        });
+    })
+});
+
+var contextMenu = document.getElementById("context_menu");
+function showContextMenu(e){
+    const distanceToBottom = 750;
+    let top = e.clientY;
+    if(top > (distanceToBottom-200)) {
+        top = distanceToBottom-200;
+    }
+    // if(top)
+    let left = e.clientX;
+    contextMenu.style.display="flex";
+    contextMenu.style.top = `${top}px`;
+    contextMenu.style.left = `${left}px`;
+    contextMenu.input = e.target;
+}
+function setNativeValue(el, value) {
+    const proto = el instanceof HTMLTextAreaElement
+        ? HTMLTextAreaElement.prototype
+        : HTMLInputElement.prototype;
+    const setter = Object.getOwnPropertyDescriptor(proto, "value").set;
+    setter.call(el, value);
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+}
+function getSelectionRange(el) {
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    if (start == null || end == null || start === end) return null;
+    return { start, end, text: el.value.slice(start, end) };
+}
+function insertText(el, text) {
+    const start = el.selectionStart ?? el.value.length;
+    const end = el.selectionEnd ?? el.value.length;
+    const newValue = el.value.slice(0, start) + text + el.value.slice(end);
+    setNativeValue(el, newValue);
+    const pos = start + text.length;
+    el.setSelectionRange(pos, pos);
+    el.focus();
+}
+contextMenu.querySelector(`.context_menu_option[ops="all"]`).addEventListener("click", (event)=>{
+    let edit = event.target.parentElement.input;
+    console.log(edit);
+    edit.focus();
+    edit.select();
+})
+contextMenu.querySelector(`.context_menu_option[ops="undo"]`).addEventListener("click", (event)=>{
+    let edit = event.target.parentElement.input;
+    console.log(edit);
+    edit.focus();
+    document.execCommand('undo');
+})
+contextMenu.querySelector(`.context_menu_option[ops="redo"]`).addEventListener("click", (event)=>{
+    let edit = event.target.parentElement.input;
+    console.log(edit);
+    edit.focus();
+    document.execCommand('redo');
+})
+contextMenu.querySelector(`.context_menu_option[ops="cut"]`).addEventListener("click", (event)=>{
+    let edit = event.target.parentElement.input;
+    // console.log(edit);
+    //将edit中选中的内容剪切
+    const range = getSelectionRange(edit);
+    if (!range) return;
+
+    window.electron.saveClipBoard(range.text).then(() => {
+        // 剪贴板写入成功后，才从输入框删除选区
+        setNativeValue(edit, edit.value.slice(0, range.start) + edit.value.slice(range.end));
+        edit.setSelectionRange(range.start, range.start);
+        edit.focus();
+        showing(0, "剪切成功");
+    }).catch((err) => {
+        console.error(err);
+        showing(1, "剪切失败");
+    });
+})
+contextMenu.querySelector(`.context_menu_option[ops="copy"]`).addEventListener("click", (event)=>{
+    let edit = event.target.parentElement.input;
+    // console.log(edit);
+    //将edit中选中的内容复制
+    const range = getSelectionRange(edit);
+    if (!range) return;
+
+    window.electron.saveClipBoard(range.text).then(() => {
+        showing(0, "复制成功");
+    }).catch((err) => {
+        console.error(err);
+        showing(1, "复制失败");
+    });
+})
+contextMenu.querySelector(`.context_menu_option[ops="paste"]`).addEventListener("click", (event)=>{
+    let edit = event.target.parentElement.input;
+    // console.log(edit);
+    //将剪贴板内容粘贴到 edit 当前光标/选区处
+    window.electron.readClipBoard().then((text) => {
+        if (typeof text !== "string" || text.length === 0) return;
+        insertText(edit, text);
+        showing(0, "粘贴成功");
+    }).catch((err) => {
+        console.error(err);
+        showing(0, "粘贴失败");
+    });
+})
+
